@@ -1,0 +1,5 @@
+node_modules/
+out/stills/
+out/*.log
+out/soundtrack.wav
+out/*.jpg

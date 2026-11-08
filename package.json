@@ -1,0 +1,14 @@
+{
+  "name": "the-hollow-house",
+  "version": "1.0.0",
+  "description": "An animated horror short drawn and scored entirely with HTML canvas, CSS and the Web Audio API, exportable to MP4.",
+  "private": true,
+  "scripts": {
+    "render": "node render.js",
+    "stills": "node render.js --stills 2.0,3.25,7.7,12,17.7,25.2,31,35.3,40,45.2,50,55.15,62",
+    "serve": "npx --yes http-server -c-1 -p 8080 ."
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}
