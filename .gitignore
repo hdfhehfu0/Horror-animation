@@ -3,3 +3,4 @@ out/stills/
 out/*.log
 out/soundtrack.wav
 out/*.jpg
+audio/voice_sfx.wav

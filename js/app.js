@@ -11,6 +11,13 @@
   if (isRender) document.body.classList.add('render');
 
   let soundtrack = null, ac = null, src = null;
+  // narration + recorded sound effects (audio/voice_sfx.mp3), played in sync with the synthesised score
+  const VO = window.VOICE || null;
+  const voiceEl = VO ? new Audio(VO.file) : null;
+  if (voiceEl) voiceEl.preload = 'auto';
+  // over file:// the browser won't let Web Audio read the file, so it plays directly (and the recorder can't capture it)
+  const voiceInGraph = location.protocol !== 'file:';
+  let voiceNode = null;
   let playing = false, t = 0, startAt = 0, startT = 0, raf = 0;
 
   const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
@@ -33,6 +40,7 @@
   function ensureAC() {
     if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
     if (ac.state === 'suspended') ac.resume();
+    if (voiceEl && voiceInGraph && !voiceNode) { try { voiceNode = ac.createMediaElementSource(voiceEl); voiceNode.connect(ac.destination); } catch (e) { console.warn(e); } }
     return ac;
   }
 
@@ -49,6 +57,10 @@
       if (extraDest) src.connect(extraDest);
       startAt = ac.currentTime + 0.05;
       src.start(startAt, startT);
+      if (voiceEl) {
+        if (extraDest && voiceNode) voiceNode.connect(extraDest);
+        voiceEl.currentTime = startT; setTimeout(() => voiceEl.play().catch(() => {}), 50);
+      }
     } else startAt = ac.currentTime;
     const loop = () => {
       if (!playing) return;
@@ -63,6 +75,7 @@
     playing = false;
     cancelAnimationFrame(raf);
     if (src) { try { src.stop(); } catch (e) {} src.disconnect(); src = null; }
+    if (voiceEl) { voiceEl.pause(); if (voiceNode) { try { voiceNode.disconnect(); voiceNode.connect(ac.destination); } catch (e) {} } }
     $('play').textContent = '▶';
   }
   let onEnded = () => {};

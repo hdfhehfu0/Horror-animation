@@ -1,7 +1,7 @@
 # One Minute
 
-A 79-second vertical (9:16) animated horror story made entirely with **HTML canvas, CSS and JavaScript**, recreating the shot list, captions and timing of a reference short-form video.
-There are no images, video clips or audio files: every frame is drawn in code and every sound is synthesised with the Web Audio API.
+A 79-second vertical (9:16) animated horror story made with **HTML canvas, CSS and JavaScript**, recreating the shot list, captions and timing of a reference short-form video.
+Every frame is drawn in code. The music score is synthesised with the Web Audio API, and the narrator and the recorded sound effects come from ElevenLabs.
 
 **Story:** *What do you do when a killer has seen you?* It's 3 AM. You and Mum are sitting by the window when, across the estate, a man kills his wife. He looks straight at you. You have one minute.
 Rule one: kill the light. Rule two: don't wait to see if the door holds. Out of the window there is a ledge 30 cm wide, eleven floors up.
@@ -42,10 +42,31 @@ node render.js --stills 2,17.9,44.5,73.4
 
 Requires Node 18+ and `ffmpeg` on your PATH.
 
-### Narration
+### Narration and sound effects
 
-The reference is narrated. This project has no recorded voice. To add one, record or generate the narration so it follows the caption timings in `js/core.js` (`TL.captions`).
-Then pass it with `--voice`. The soundtrack ducks under the voice automatically.
+The film is narrated by an ElevenLabs voice ("Jack – Deep Dark Horror Narrator", model `eleven_v4`). It also uses recorded sound effects from ElevenLabs Sound Effects, layered on the synthesised score:
+knife, distant scream, mug smash, light switch, curtains, main-door bangs, stairwell footsteps, the polite knock, door pounding with the chain, wood cracking, freezing wind, the door coming off its hinges, glitches and the final sting.
+
+| File | What it is |
+|---|---|
+| `audio/narration.json` | the script: every sentence with the time it must start (the caption times) |
+| `audio/raw/narr_a.mp3` | the single narration take from ElevenLabs |
+| `audio/narration.wav` | that take cut into sentences and placed on the timeline |
+| `audio/sfx/` | the generated sound effects (`alt/` holds alternative takes) |
+| `audio/voice_sfx.wav/.mp3` | narration + effects on the timeline, ready to mix |
+| `js/voice-data.js` | when the narrator speaks, so the music ducks under the voice |
+
+To rebuild after changing the script or swapping a take:
+
+```bash
+python3 tools/align_narration.py audio/raw/narr_a.mp3 audio/narration.json audio/narration.wav
+python3 tools/mix_voice_sfx.py
+ffmpeg -y -i audio/voice_sfx.wav -b:a 160k audio/voice_sfx.mp3
+npm run render                      # mixes score + voice/SFX, loudness-normalised to -14 LUFS
+```
+
+`node render.js --no-voice` renders with the synthesised score only.
+In the browser player the narration plays in sync either way. To include it when recording from the page, open the page through `npm run serve`; opening it from a `file://` URL leaves the narration out of the recording.
 
 ## How it's built
 

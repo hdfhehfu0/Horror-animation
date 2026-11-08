@@ -60,11 +60,21 @@
     const comp = ac.createDynamicsCompressor();
     comp.threshold.value = -16; comp.knee.value = 8; comp.ratio.value = 4;
     comp.attack.value = 0.004; comp.release.value = 0.25;
-    master.connect(comp).connect(ac.destination);
+    // music ducks under the narrator (segments come from js/voice-data.js when a narration exists)
+    const duck = ac.createGain(); duck.gain.value = 1;
+    master.connect(duck).connect(comp).connect(ac.destination);
+    const VO = (typeof window !== 'undefined' && window.VOICE) || null;
+    if (VO) for (const [a, b] of VO.segments) {
+      duck.gain.setTargetAtTime(0.22, Math.max(0, a - 0.08), 0.05);
+      duck.gain.setTargetAtTime(1, b + 0.05, 0.25);
+    }
+    // when the recorded sound effects are present, the synthesised doubles are kept only as low-end weight
+    const SYN = VO ? 0.35 : 1;
 
     // fade out over the last frames
-    master.gain.setValueAtTime(0.9, 0);
-    master.gain.setValueAtTime(0.9, DUR - 0.8);
+    const LVL = VO ? 0.28 : 0.9; // the score sits further back when there is a narrator
+    master.gain.setValueAtTime(LVL, 0);
+    master.gain.setValueAtTime(LVL, DUR - 0.8);
     master.gain.linearRampToValueAtTime(0, DUR - 0.02);
 
     const rev = ac.createConvolver();
@@ -246,9 +256,9 @@
     }
     // mug slips and smashes
     whoosh(TL.mugSmash, 0.7, 0.1, false);
-    shatter(TL.mugSmash);
+    if (!VO) shatter(TL.mugSmash); else thud(TL.mugSmash, 0.4, 500);
     // light switch, lamp, curtains
-    click(TL.lightOff, 0.8, 2200); click(TL.lightOff + 0.03, 0.5, 1400);
+    click(TL.lightOff, 0.8 * SYN, 2200); click(TL.lightOff + 0.03, 0.5 * SYN, 1400);
     boom(TL.lightOff + 0.02, 0.3, 50);
     click(TL.lampOff, 0.6, 2600);
     {
@@ -263,17 +273,17 @@
       osc('square', f, t, 0.05).connect(filt('bandpass', f, 4)).connect(amp(t, [[0, 0], [0.002, 0.06], [0.04, 0]])).connect(bus(1, 0.4, 0.05));
     });
     // main door downstairs bangs (distant)
-    TL.mainBangs.forEach((t) => thud(t, 0.9, 200, 0.4));
+    TL.mainBangs.forEach((t) => thud(t, 0.9 * SYN, 200, 0.4));
     // footsteps on the stairs (getting louder)
     TL.stairSteps.forEach((t, i) => {
-      const lvl = 0.35 + (i / TL.stairSteps.length) * 0.6;
+      const lvl = (0.35 + (i / TL.stairSteps.length) * 0.6) * SYN;
       noise(BROWN, t, 0.2, i).connect(filt('lowpass', 300)).connect(amp(t, [[0, 0], [0.005, lvl], [0.12, 0]])).connect(bus(1, 0, 0.5));
       noise(WHITE, t, 0.05, i + 9).connect(filt('bandpass', 2000, 2)).connect(amp(t, [[0, 0], [0.002, lvl * 0.15], [0.04, 0]])).connect(bus(1, 0, 0.5));
     });
     // polite knock, then the blows
-    TL.knocks.forEach((t) => thud(t, 0.55, 900));
-    TL.blows.forEach((t, i) => { thud(t, 1.1 + i * 0.03, 220, 0.2); chainRattle(t + 0.02, 0.5, 0.25); });
-    chainRattle(49.33, 1.6, 0.35);
+    TL.knocks.forEach((t) => thud(t, 0.55 * SYN, 900));
+    TL.blows.forEach((t, i) => { thud(t, (1.1 + i * 0.03) * (VO ? 0.6 : 1), 220, 0.2); chainRattle(t + 0.02, 0.5, 0.25 * SYN); });
+    chainRattle(49.33, 1.6, 0.35 * (VO ? 0.6 : 1));
     {
       const t = TL.doorCrack; // wood splitting
       const src = noise(WHITE, t, 0.6, 77);

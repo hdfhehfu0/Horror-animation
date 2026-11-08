@@ -5,7 +5,8 @@
  *   node render.js --from 48 --to 56 --out out/scare.mp4     a section
  *   node render.js --stills 3.2,18,35.2,44.9,55.1            PNG stills -> out/stills/
  *
- *   node render.js --voice narration.mp3                     mix your own voiceover over the soundtrack
+ *   node render.js --voice other.wav                         use a different narration/SFX track (default: audio/voice_sfx.wav)
+ *   node render.js --no-voice                                synthesised score only
  *
  * Needs Node 18+, ffmpeg on PATH and Playwright (npm i -D playwright && npx playwright install chromium).
  */
@@ -52,7 +53,9 @@ async function openPage(browser) {
 
   const from = +opt('from', 0), to = +opt('to', TL.DURATION);
   const outFile = path.resolve(opt('out', path.join(OUT, 'one-minute.mp4')));
-  const voice = opt('voice');
+  const defVoice = path.join(ROOT, 'audio', 'voice_sfx.wav');
+  const voice = args.includes('--no-voice') ? null : opt('voice', fs.existsSync(defVoice) ? defVoice : null);
+  if (voice) console.log('narration + sfx ->', voice);
   const fps = TL.FPS, N = Math.round((to - from) * fps);
 
   // --- audio + subtitles
@@ -69,9 +72,9 @@ async function openPage(browser) {
     '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
     '-ss', String(from), '-t', String(to - from), '-i', wavPath,
     ...(voice ? ['-ss', String(from), '-t', String(to - from), '-i', path.resolve(voice)] : []),
-    ...(voice ? ['-filter_complex', '[2:a]volume=1.6[v];[1:a][v]sidechaincompress=threshold=0.05:ratio=6:release=300[m];[m][v]amix=inputs=2:duration=first:normalize=0[a]', '-map', '0:v', '-map', '[a]'] : []),
+    ...(voice ? ['-filter_complex', '[2:a]aformat=channel_layouts=stereo,aresample=48000[v];[1:a]aresample=48000[m];[m][v]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[a]', '-map', '0:v', '-map', '[a]'] : []),
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '19', '-pix_fmt', 'yuv420p', '-r', String(fps),
-    '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', outFile], { stdio: ['pipe', 'inherit', 'inherit'] });
+    '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-shortest', '-movflags', '+faststart', outFile], { stdio: ['pipe', 'inherit', 'inherit'] });
   const done = new Promise((res, rej) => ff.on('close', (c) => (c === 0 ? res() : rej(new Error('ffmpeg exited ' + c)))));
 
   const t0 = Date.now();
