@@ -21,7 +21,8 @@ const opt = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i
 const ROOT = __dirname;
 const OUT = path.join(ROOT, 'out');
 fs.mkdirSync(OUT, { recursive: true });
-const url = 'file://' + path.join(ROOT, 'index.html') + '?render=1';
+const PAGE = opt('page', 'index.html');
+const url = 'file://' + path.join(ROOT, PAGE) + '?render=1';
 const WORKERS = +opt('workers', Math.max(1, Math.min(4, require('os').cpus().length)));
 
 async function openPage(browser) {
@@ -36,7 +37,7 @@ async function openPage(browser) {
 (async () => {
   const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   const first = await openPage(browser);
-  const TL = await first.evaluate(() => ({ FPS: HH.TL.FPS, DURATION: HH.TL.DURATION }));
+  const TL = await first.evaluate(() => ({ FPS: HH.TL.FPS, DURATION: HH.TL.DURATION, SLUG: HH.TL.SLUG || 'one-minute', VOICE_WAV: (window.VOICE && VOICE.wav) || 'audio/voice_sfx.wav', VOICE_MP3: (window.VOICE && VOICE.file) || 'audio/voice_sfx.mp3' }));
 
   // --- stills mode
   const stills = opt('stills');
@@ -52,16 +53,17 @@ async function openPage(browser) {
   }
 
   const from = +opt('from', 0), to = +opt('to', TL.DURATION);
-  const outFile = path.resolve(opt('out', path.join(OUT, 'one-minute.mp4')));
-  const defVoice = path.join(ROOT, 'audio', 'voice_sfx.wav');
+  const outFile = path.resolve(opt('out', path.join(OUT, TL.SLUG + '.mp4')));
+  // the .wav is a build product (gitignored); fall back to the committed .mp3
+  const defVoice = [TL.VOICE_WAV, TL.VOICE_MP3].map((p) => path.join(ROOT, p)).find((p) => fs.existsSync(p)) || path.join(ROOT, TL.VOICE_WAV);
   const voice = args.includes('--no-voice') ? null : opt('voice', fs.existsSync(defVoice) ? defVoice : null);
   if (voice) console.log('narration + sfx ->', voice);
   const fps = TL.FPS, N = Math.round((to - from) * fps);
 
   // --- audio + subtitles
-  const wavPath = path.join(OUT, 'soundtrack.wav');
+  const wavPath = path.join(OUT, TL.SLUG + '-score.wav');
   fs.writeFileSync(wavPath, Buffer.from(await first.evaluate(() => HH.wavBase64()), 'base64'));
-  fs.writeFileSync(path.join(OUT, 'one-minute.srt'), await first.evaluate(() => HH.srt()));
+  fs.writeFileSync(path.join(OUT, TL.SLUG + '.srt'), await first.evaluate(() => HH.srt()));
   console.log('soundtrack ->', wavPath);
   if (args.includes('--audio-only')) { await browser.close(); return; }
 

@@ -1,6 +1,8 @@
 node_modules/
 out/stills/
 out/*.log
+out/*-score.wav
 out/soundtrack.wav
 out/*.jpg
 audio/voice_sfx.wav
+films/motel/audio/voice_sfx.wav

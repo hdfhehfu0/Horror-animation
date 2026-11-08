@@ -107,8 +107,8 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     };
-    $('wav').onclick = async () => { await audioReady; download(Sound.bufferToWav(soundtrack), 'one-minute.wav'); };
-    $('srt').onclick = () => download(new Blob([toSRT()], { type: 'text/plain' }), 'one-minute.srt');
+    $('wav').onclick = async () => { await audioReady; download(Sound.bufferToWav(soundtrack), (TL.SLUG || 'one-minute') + '.wav'); };
+    $('srt').onclick = () => download(new Blob([toSRT()], { type: 'text/plain' }), (TL.SLUG || 'one-minute') + '.srt');
     $('png').onclick = () => canvas.toBlob((b) => download(b, `frame-${t.toFixed(2)}.png`), 'image/png');
 
     // Real-time recording: canvas stream + soundtrack stream -> MediaRecorder
@@ -127,7 +127,7 @@
       rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
       rec.onstop = () => {
         const type = rec.mimeType || mime || 'video/webm';
-        download(new Blob(chunks, { type }), `one-minute.${type.includes('mp4') ? 'mp4' : 'webm'}`);
+        download(new Blob(chunks, { type }), `${TL.SLUG || 'one-minute'}.${type.includes('mp4') ? 'mp4' : 'webm'}`);
         $('rec').classList.remove('recording'); $('rec').textContent = '● Record video with sound'; $('rec').disabled = false;
         $('progress').hidden = true;
       };
@@ -172,7 +172,7 @@
   };
 
   // poster frame (lightning over the house) until the viewer presses play
-  const poster = () => { if (isRender) draw(0); else if (!playing && t === 0) Film.render(ctx, 1.4); };
+  const poster = () => { if (isRender) draw(0); else if (!playing && t === 0) Film.render(ctx, TL.POSTER || 1.4); };
   poster();
   fontsReady.then(poster);
 })();

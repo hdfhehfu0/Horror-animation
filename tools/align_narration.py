@@ -10,6 +10,8 @@ src, script_path, out = sys.argv[1], sys.argv[2], sys.argv[3]
 lines = json.load(open(script_path))
 N = len(lines)
 DUR = 78.7
+NATURAL = lines[0][0] is None
+OFFSET = 0.4
 
 pcm = subprocess.run(['ffmpeg', '-v', 'error', '-i', src, '-ac', '1', '-ar', str(SR), '-f', 's16le', '-'],
                      capture_output=True, check=True).stdout
@@ -64,7 +66,10 @@ report = []
 for i, ((a, b), (t, text)) in enumerate(zip(segs, lines)):
     a = max(0, a - 0.03); b = b + 0.06
     clip = x[int(a * SR):int(b * SR)].copy()
-    nxt = lines[i + 1][0] if i + 1 < N else DUR - 0.3
+    if NATURAL:
+        t = a + OFFSET; nxt = 1e9
+    else:
+        nxt = lines[i + 1][0] if i + 1 < N else DUR - 0.3
     start = max(t, cursor + 0.04)                 # never overlap the previous sentence
     room = nxt - start
     dur = len(clip) / SR
@@ -82,6 +87,11 @@ for i, ((a, b), (t, text)) in enumerate(zip(segs, lines)):
     cursor = start + len(clip) / SR
     report.append(f'{t:6.2f} -> {start:6.2f}  {len(clip)/SR:4.2f}s  x{tempo:.2f}  {text}')
 
+if NATURAL:
+    DUR = cursor + 1.6
+    timings = []
+    for (a, b), (_, text) in zip(segs, lines): timings.append([round(a + OFFSET, 3), round(b + OFFSET, 3), text])
+    json.dump({'duration': round(DUR, 2), 'sentences': timings}, open(out.replace('.wav', '.timings.json'), 'w'), indent=1)
 mix = mix[:int(DUR * SR)]
 mix /= max(1e-6, np.abs(mix).max()) / 0.89
 with wave.open(out, 'wb') as w:

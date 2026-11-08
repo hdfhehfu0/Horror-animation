@@ -83,3 +83,39 @@ render.js          headless Chrome -> ffmpeg exporter
 - **One timeline.** Shots, captions, the stab, the mug smash, the light switch, knocks, blows, the door crack and the burst are all defined once in `TL`. The picture and the audio both read them, so they can't drift apart.
 - **Deterministic.** `Film.render(ctx, t)` is a pure function of time (seeded noise, no `Math.random`). Preview, recording and export all produce the same frames.
 - **Editing.** To retime anything, change the numbers in `TL`. To change wording, edit `TL.captions` (`*word` = yellow, `!word` = red). Each shot is one function in `js/scenes.js`.
+
+---
+
+# Room 9 (second film)
+
+A second 78-second vertical story in the same format, set somewhere new: a **roadside motel at 2:47 AM**, with a cornfield behind it.
+Open **`motel.html`**, or render it with `node render.js --page motel.html`, which writes `out/room-9.mp4` and `out/room-9.srt`.
+
+**Story:** you and your big sister are stuck at a roadside motel after the car broke down. Across the parking lot, a man in a white mask walks into the office, and the night clerk never walks out.
+He hears you. Rule one: go dark. He checks the doors: Room 12, 11, 10… then yours, and he has the key from the office.
+Rule two: never stay where he expects you. Out through the tiny bathroom window, into the corn. Something in the corn is running too.
+
+**Cast:** the big sister (green hoodie, curly ponytail), you (the kid in the yellow star tee), the night clerk, and **the Masked Man**.
+He is an original slasher, not a copy of an existing film character: a dark hood, a cracked porcelain mask with slit eyes, grey work overalls and gloves.
+
+Same narrator voice as One Minute, plus 11 new ElevenLabs sound effects: neon/crickets ambience, TV static, the struggle in the office, the remote cracking, TV and lamp off, door handles, the office key, the bathroom window, running through corn, the door kicked open, and the final crash.
+The shots are timed to the narration's natural pacing.
+
+```
+motel.html                      the player page for Room 9
+films/motel/core.js             timeline: shots, cues, captions cut from the narration timings
+films/motel/sentences.js        sentence timings + caption markup (generated from the narration)
+films/motel/characters.js       sister, kid, clerk, the Masked Man (mask close-up + full body)
+films/motel/scenes.js           the 28 shots, HUD, captions, glitch, grain
+films/motel/audio.js            synthesised score (shares the engine of js/audio.js)
+films/motel/mix.py              narration + SFX mix -> films/motel/audio/voice_sfx.*
+films/motel/audio/              narration take, aligned narration, sound effects
+```
+
+Rebuild the audio after edits:
+
+```bash
+python3 tools/align_narration.py films/motel/audio/raw/narr_a.mp3 films/motel/audio/narration.json films/motel/audio/narration.wav
+python3 films/motel/mix.py
+node render.js --page motel.html
+```
