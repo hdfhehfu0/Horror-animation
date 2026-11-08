@@ -35,7 +35,7 @@ The panel also saves the soundtrack (`.wav`), the captions (`.srt`) and the curr
 ```bash
 npm install && npx playwright install chromium
 npm run render                       # -> out/one-minute.mp4 (1080x1920, 30 fps, H.264 + AAC) + out/one-minute.srt
-node render.js --voice narration.mp3 # same, with your voiceover mixed in (music ducks under it)
+node render.js --voice other.wav     # use a different narration/SFX track instead of audio/voice_sfx.wav
 node render.js --from 45 --to 57 --out out/clip.mp4
 node render.js --stills 2,17.9,44.5,73.4
 ```
