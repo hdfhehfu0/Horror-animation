@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bookmarked</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Permanent+Marker&family=Montserrat:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="player">
+    <header class="top">
+      <h1>Bookmarked</h1>
+      <p class="sub">What if a man who hunts killers met a man who watches everyone? · 1:11 · 1080×1920 (9:16) · 30 fps · <a href="index.html" style="color:#f7b500">also see: One Minute</a> · <a href="motel.html" style="color:#f7b500">Room 9</a></p>
+    </header>
+
+    <div class="stage" id="stage">
+      <canvas id="film" width="1080" height="1920"></canvas>
+      <button class="bigplay" id="bigplay" aria-label="Play">
+        <svg viewBox="0 0 24 24" width="44" height="44"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+        <span>Play with sound</span>
+      </button>
+      <div class="status" id="status">Preparing the soundtrack…</div>
+    </div>
+
+    <div class="controls">
+      <button id="play" class="btn icon" aria-label="Play/Pause">▶</button>
+      <span class="time" id="time">0:00.0 / 1:11.1</span>
+      <input id="scrub" type="range" min="0" max="71.07" step="0.0333" value="0" aria-label="Seek">
+      <button id="fs" class="btn" title="Fullscreen">⛶</button>
+    </div>
+
+    <nav class="chapters" id="chapters"></nav>
+
+    <section class="export">
+      <h2>Export</h2>
+      <div class="row">
+        <button class="btn primary" id="rec">● Record video with sound</button>
+        <button class="btn" id="wav">Download soundtrack (.wav)</button>
+        <button class="btn" id="srt">Download subtitles (.srt)</button>
+        <button class="btn" id="png">Save current frame (.png)</button>
+      </div>
+      <p class="hint" id="rechint">
+        Recording plays the film once in real time (71 s) and saves an MP4 (or WebM, depending on your browser) with the soundtrack.
+        For a frame-perfect H.264 MP4, run <code>node render.js --page bookmarked.html</code> (see README).
+      </p>
+      <div class="progress" id="progress" hidden><div id="bar"></div></div>
+    </section>
+  </main>
+
+  <script src="js/core.js"></script>
+  <script src="films/bookmarked/words.js"></script>
+  <script src="films/bookmarked/core.js"></script>
+  <script src="films/bookmarked/voice-data.js"></script>
+  <script src="films/bookmarked/audio.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="films/bookmarked/characters.js"></script>
+  <script src="films/bookmarked/scenes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

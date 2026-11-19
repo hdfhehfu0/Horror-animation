@@ -119,3 +119,50 @@ python3 tools/align_narration.py films/motel/audio/raw/narr_a.mp3 films/motel/au
 python3 films/motel/mix.py
 node render.js --page motel.html
 ```
+
+---
+
+# Bookmarked (third film)
+
+A 71-second vertical "what if" short, recreating the **format** of a reference short shot by shot: a colour-coded VS card, a clue object,
+a corkboard and a map, the meeting, a red-eyed shadow, a lean-in whisper, the TEAM UP turn, a trap with a CASE CLOSED stamp, a clueless
+police department, a calendar epilogue and a comment-bait poll. Captions show **one word at a time**, timed to the narrator's words.
+The frame-by-frame breakdown of the reference is in [`films/bookmarked/REFERENCE-ANALYSIS.md`](films/bookmarked/REFERENCE-ANALYSIS.md).
+
+Open **`bookmarked.html`**, or render it with `node render.js --page bookmarked.html` (writes `out/bookmarked.mp4` and `out/bookmarked.srt`).
+
+**Story:** *What if a man who hunts killers met a man who watches everyone?* A killer in the harbour town of Port Halden leaves a bookmark at
+every scene. Crime-lab analyst **Silas Crane** follows them to a little bookstore, Wren & Page, where **Ezra Wren** closes his book and smiles:
+"I know what you do at night, Silas." Ezra has a box of receipts: the killer buys a book every Friday. Silas reads the blood, Ezra reads the people,
+and one book on one shelf is the trap. They still meet every Friday.
+
+**Cast:** both leads are original characters, written to have the energy of the requested pairing (a vigilante forensic analyst and an obsessive
+bookseller). They are not the TV characters. Silas has black side-parted hair, heavy-lidded deadpan eyes and a slate crime-lab jacket with a clipped ID badge,
+and his side of the split is crimson. Ezra has fluffy chestnut curls, round glasses and a mustard cardigan, and his side is green. There is also a grey-moustached detective.
+
+**Narrator:** ElevenLabs "Mark Vale – Deep Storyteller" (deep, cinematic American true-crime voice), model `eleven_v4`, with a `[whispering]`
+tag on Ezra's "Relax. I just watch people." The take was read slowly (88 s), so `prep_narration.py` shortens the pauses and plays it 1.12× faster (same pitch).
+It then maps the per-word times from the ElevenLabs transcript through that edit. Every cut, pop and caption is placed on those word times.
+
+**Sound:** a quiet D-minor pizzicato + pad + music-box bed (ducked under the voice, like the reference's soft bed) and small synthesised
+effects on the cues: VS pop, pin drops, shop bell, book thump, the shadow's riser and sting, sign flip, case latch, receipts, TEAM UP chime,
+blood splats, the grab, the CASE CLOSED slam, calendar flips and the end-card chime.
+
+```
+bookmarked.html                    the player page
+films/bookmarked/REFERENCE-ANALYSIS.md   frame-by-frame breakdown of the reference video
+films/bookmarked/prep_narration.py tightens the take, maps word times -> words.js, voice.mp3, voice-data.js
+films/bookmarked/words.js          generated: every word and sentence on the film timeline
+films/bookmarked/core.js           timeline: shots and cues looked up by word, one-word captions, lip flaps
+films/bookmarked/characters.js     Silas, Ezra, the detective + props (bookmark, shelves, receipts, case, pins, calendar, stamp…)
+films/bookmarked/scenes.js         the 21 shots, captions, end fade
+films/bookmarked/audio.js          synthesised score + sound effects
+films/bookmarked/audio/raw/        the ElevenLabs take and its word-timed transcript
+```
+
+Rebuild after changing the take or the tempo:
+
+```bash
+python3 films/bookmarked/prep_narration.py 1.12   # tempo
+node render.js --page bookmarked.html
+```

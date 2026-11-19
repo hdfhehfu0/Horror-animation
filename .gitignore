@@ -6,3 +6,5 @@ out/soundtrack.wav
 out/*.jpg
 audio/voice_sfx.wav
 films/motel/audio/voice_sfx.wav
+films/bookmarked/audio/voice.wav
+films/bookmarked/audio/narration.wav
