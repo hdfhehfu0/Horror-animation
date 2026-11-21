@@ -236,3 +236,20 @@ but here **sound** is the story. Open **`quieter.html`**, or render it with `nod
 - The sound is mostly recorded ElevenLabs effects (afternoon street, car passes, birdsong, wind, your breath, and the creature's breath from Part 1). Each one stops on the frame its source stops. The synthesised layer is your body (heartbeat, blood, the 7.8 kHz phantom ring, the molecule hiss). Between "Total silence" and the breath, nothing plays but the narrator.
 
 Rebuild the audio: `python3 films/quieter/prep_narration.py && python3 films/quieter/mix.py`, then `node render.js --page quieter.html`.
+
+---
+
+# POV: You wake up as a Kid in December of 1999 (sixth film, in progress)
+
+A recreation of a photoreal "POV nostalgia" short: six first-person shots, each with a hard cut, of a kid's December day in 1999. The shots are breakfast cereal at the kitchen table, pushing through the doors of a giant toy store, the minivan ride home with bags of presents, holding up a VHS box in a video rental store, pizza with mom and dad, and popcorn in front of the Christmas tree. A red slab-serif title sits over the first three seconds, and the film ends on a slow sink to black.
+
+The shots are **real AI video clips** generated with the user's vidIQ connector (MiniMax H3, 768p, 9:16, 4 s each, 192 credits). Every prompt is original and unbranded: no real store logos, cereal mascots or film footage.
+
+```
+films/pov1999/plan.json     the six shot prompts, model and lengths
+films/pov1999/title.html    the title (Roboto Slab 800, red with a white outline) -> title.png
+films/pov1999/music.py      an original warm piano + music-box + sleigh-bell cue (no existing song) -> music.wav
+films/pov1999/assemble.py   scales and cuts the clips, title, warm grade, fade, music -> out/pov-1999.mp4
+```
+
+Assemble once the clips exist: `python3 films/pov1999/assemble.py clip1.mp4 ... clip6.mp4`.
