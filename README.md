@@ -166,3 +166,47 @@ Rebuild after changing the take or the tempo:
 python3 films/bookmarked/prep_narration.py 1.12   # tempo
 node render.js --page bookmarked.html
 ```
+
+---
+
+# Darker (fourth film)
+
+*What if it never stopped getting darker?* An 80-second vertical escalation short in the style of the
+"never stopped getting hotter" reference (breakdown: [`references/never-stopped-hotter-ANALYSIS.md`](references/never-stopped-hotter-ANALYSIS.md)):
+one locked-off camera on a low-poly street, a counter in the top-left corner, and an event line followed by a **FACT** at every stage, with a deep horror narrator added.
+
+Open **`darker.html`**, or render it with `node render.js --page darker.html` (writes `out/darker.mp4` and `out/darker.srt`).
+
+**The story.** A sunny afternoon on a dead-end street at the edge of a pine forest. The **LIGHT** counter falls from 100,000 lux to 0:
+- overcast (1,000 lux), then the streetlights flicker on, then dusk ends (3.4 lux);
+- the colours drain away (rod vision), then only the moon is left (0.25 lux), then the streetlights go out one by one;
+- *something moves between the trees*, and eyes start to shine in the dark;
+- the moon goes, then starlight (0.002 lux), then the stars go, then a cloudy night with no moon (0.0001 lux);
+- you can't see your own hand, the brain invents shapes (phosphenes), *but some of them are real*;
+- a cat can see in light about six times dimmer than you can. *And it can see you.* Cut to black. "Wait." Then a PART 2 teaser.
+
+**How it's made.**
+- **The street is real 3D** (three.js r170, vendored in `vendor/three.r170.js`, MIT), rendered headless frame by frame:
+  - flat-shaded faceted trees (jittered icosahedron crowns on forked trunks), about 600 instanced pines;
+  - clapboard houses whose windows light up and go dark, four streetlamps with spotlight pools, a parked station wagon, a striped dead-end barricade and a DEAD END sign;
+  - a sky shader, stars, the moon, and clouds that cover it;
+  - a long, low, four-legged silhouette that slinks across the road.
+- **The picture is graded in 2D on top.** The colour drains with `saturate()`, the exposure falls, lamp and moon glows are added, and the eyeshine is drawn at the projected 3D positions. The phosphenes, sensor grain, the slit-pupil close-up, the HUD (Inter + JetBrains Mono) and the reference-style captions come last: a soft dark halo behind the text, an orange FACT pill, and numbers in the mono font.
+- **The counter** is keyed in log space: it crawls while each fact is on screen, so the number agrees with what you read, and falls fast during the event lines.
+- **The narrator** is ElevenLabs "Jack – Deep Dark Horror Narrator" (`eleven_v4`), with the last two lines whispered, at its natural pace.
+  Every caption, light, window and pair of eyes is timed from the word timings of the ElevenLabs transcript.
+- **The sound.** A synthesised bed: afternoon birds and wind, the lamps' mains hum, a drone that grows as the colour drains, a pulse for each pair of eyes, a heartbeat in the dark, glassy phosphene shimmer, a sting, and a ringing after the cut. Recorded ElevenLabs effects are mixed on top: crickets that stop dead when something moves, the streetlights dying one by one, and a heavy breath at the close-up.
+
+```
+darker.html                       the player page
+films/darker/prep_narration.py    places the take on the timeline (moves the whispered "Wait." after the cut)
+films/darker/words.js             generated: word and sentence timings
+films/darker/core.js              timeline: captions, the lux counter, light/sky/exposure tracks, lamps, windows, eyes
+films/darker/world.js             the 3D street
+films/darker/film.js              compositor: grade, glows, eyes, phosphenes, HUD, captions, end cards
+films/darker/audio.js             synthesised soundtrack
+films/darker/mix.py               narration + recorded effects -> audio/voice_sfx.*, voice-data.js
+films/darker/audio/raw/, sfx/     the ElevenLabs takes, transcript and effects
+```
+
+Rebuild the audio: `python3 films/darker/prep_narration.py && python3 films/darker/mix.py`, then `node render.js --page darker.html`.
