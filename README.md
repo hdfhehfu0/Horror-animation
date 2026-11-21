@@ -245,10 +245,11 @@ A recreation of a photoreal "POV nostalgia" short: six first-person shots, each 
 
 The shots are **real AI video clips** generated with the user's vidIQ connector (MiniMax H3, 768p, 9:16, 4.5 s each; 140 credits including one retake). They are kept in `films/pov1999/clips/`.
 Every prompt is original and unbranded: no real store logos, cereal mascots or film footage. Where the model drifted towards something recognisable, the shot was fixed:
-- the toy-store ceiling banner is blurred in every frame (`"blur"` in `plan.json`);
+- the toy-store ceiling banner is softened in every frame through a feathered mask (`"blur"` in `plan.json`), so it reads as out-of-focus signage;
 - the video-store shot was re-generated with faceless, snowy VHS covers.
 
-Output: `out/pov-1999.mp4` (1080×1920, 24 fps, 26.4 s, about −16.6 LUFS). The clips' own audio is replaced by the original music cue.
+Output: `out/pov-1999.mp4` (1080×1920, 24 fps, 29.6 s, about −16.5 LUFS). The clips' own audio is replaced by the original music cue.
+To match the reference's lingering pacing, each clip is gently slowed with motion interpolation (`speed` in `plan.json`). The opening breakfast shot is held longest (0.78×, 5.6 s) and the rest run at 0.92×. Each clip is cut to a whole number of frames, so the fade and the music end on the last frame.
 
 ```
 films/pov1999/plan.json     the six shot prompts, model and lengths
