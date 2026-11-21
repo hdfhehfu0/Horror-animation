@@ -210,3 +210,29 @@ films/darker/audio/raw/, sfx/     the ElevenLabs takes, transcript and effects
 ```
 
 Rebuild the audio: `python3 films/darker/prep_narration.py && python3 films/darker/mix.py`, then `node render.js --page darker.html`.
+
+---
+
+# Quieter (fifth film, Part 2 of the series)
+
+*What if it never stopped getting quieter?* The sequel teased at the end of Darker. It's the same street, the same narrator and the same reference format,
+but here **sound** is the story. Open **`quieter.html`**, or render it with `node render.js --page quieter.html` (writes `out/quieter.mp4` and `out/quieter.srt`).
+
+**The story.**
+- A golden-hour afternoon full of sound. The **SOUND** counter falls from 74 dB as each sound stops on its line:
+  - the traffic fades (cars stop crossing behind the dead end);
+  - the birds stop singing (the crows on the wire fly off);
+  - the wind goes still (trees, a flag and the falling leaves **freeze in mid-air**);
+  - you hear your own breath (the view rises and falls), then hold it.
+- At 0 dB you still hear something: the phantom ringing that 94% of people heard in a soundproof room in Heller & Bergman's 1953 study.
+- Then your heartbeat and your blood (the frame thumps). The quietest room ever measured is about −20 dB (Microsoft, Guinness 2015).
+- At about −23 dB the only sound left is air molecules (the dust motes glitter), then **−∞ dB**: total silence, digital zero.
+- Then the counter jumps back to 10 dB, because *something else is breathing*. Its long shadow creeps up the road from behind the camera: *right behind you.*
+- Cut to black. "Wait." Then a PART 3 teaser: *What if it never stopped getting closer?*
+
+**How it's made.**
+- `films/quieter/world.js` is Part 1's three.js street re-lit at golden hour, with the sun low **behind the camera**. It adds a cross street with traffic, a phone wire with crows, a waving flag and instanced leaves (all frozen by one "wind time" clock), and the creature from Part 1, kept behind the camera so that only its shadow enters the frame.
+- `film.js` adds a SOUND HUD: dB, sound pressure in µPa, and a live trace that flattens into a line. It also draws dust motes that freeze in the silence and blow away from the breath, the heartbeat pulse, the ringing shimmer, and the same caption style.
+- The sound is mostly recorded ElevenLabs effects (afternoon street, car passes, birdsong, wind, your breath, and the creature's breath from Part 1). Each one stops on the frame its source stops. The synthesised layer is your body (heartbeat, blood, the 7.8 kHz phantom ring, the molecule hiss). Between "Total silence" and the breath, nothing plays but the narrator.
+
+Rebuild the audio: `python3 films/quieter/prep_narration.py && python3 films/quieter/mix.py`, then `node render.js --page quieter.html`.
