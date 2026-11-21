@@ -5,11 +5,49 @@
   "aspectRatio": "9:16",
   "style": "Photorealistic first-person POV video, shot on a wide-angle action camera held at a 9-year-old child's eye level, December 1999 in suburban America, warm tungsten lighting, soft film grain, nostalgic home-video feel, gentle natural handheld motion. The viewer IS the kid: only the kid's own hands and arms, in a navy blue long-sleeve shirt, are ever visible. No text, no logos, no brand names, no readable signs or labels anywhere.",
   "scenes": [
-    {"name": "breakfast", "duration": 4, "prompt": "The kid sits at a kitchen table covered with a red-and-green Christmas-pattern tablecloth and slowly scoops a spoonful of golden frosted corn flakes and milk from a white bowl. A glass of orange juice and a colorful plain cereal box with no logo sit beside the bowl. In the background a mom in a navy sweater and grey sweatpants washes dishes at the sink with her back turned; a small decorated Christmas tree with warm lights, a white fridge covered in kids' drawings and magnets, a small boxy CRT television on the counter showing a bright, colorful cartoon of an original orange fox, wood cabinets, a frosty window with falling snow."},
-    {"name": "toy store", "duration": 4, "prompt": "The kid's two hands push open a pair of glass doors and the kid walks forward into a huge toy superstore at Christmas time. Shiny floor of big checkered tiles in red, yellow, blue and green; tall aisles stacked high with plush animals, action-figure boxes, dolls, bikes and board games, all in plain unbranded packaging; red and green holiday banners and silver garlands hanging from the ceiling with no readable words; bright fluorescent lights; families with shopping carts. The camera moves forward through the doors."},
-    {"name": "minivan", "duration": 4, "prompt": "Night. The kid rides in the back seat of a 1990s family minivan, legs in light-blue jeans and white sneakers stretched out on the seat. Crinkly plain shopping bags full of wrapped presents and toy boxes are piled on the seat beside the kid. Mom and dad sit in the front seats, dad driving; through the windshield, colorful Christmas lights on houses and glowing streetlights slide past. Gentle road vibration, warm dim interior light."},
-    {"name": "video store", "duration": 4, "prompt": "Inside a 1999 video rental store at Christmas. The kid's hand holds up a VHS tape box of a family holiday comedy with a snowy, illustrated cover and no readable title. Behind it, a display shelf of holiday VHS tapes with blurry unreadable covers, blue carpet, families browsing the aisles, tinsel garland and paper snowflakes along the ceiling, bright store lights."},
-    {"name": "pizza dinner", "duration": 4, "prompt": "Night, a cozy family pizza restaurant in 1999. The kid's two hands hold a red pebbled plastic cup of soda over a red-and-white checkered tablecloth. A hot pan pizza with pepperoni sits in the middle of the table. Across the booth, a mom with shoulder-length brown hair in a cream knit sweater and a dad in a dark green sweater smile and laugh warmly at the kid. Red stained-glass hanging lamps, small Christmas decorations, warm golden light."},
-    {"name": "movie night", "duration": 4, "prompt": "Night in a cozy 1999 living room. The kid, wearing red plaid flannel pajamas, feet in white socks resting on an ottoman, reaches a hand into a big bowl of popcorn; a plate of decorated Christmas sugar cookies sits nearby. In front: a fully lit Christmas tree with presents underneath and a boxy CRT television on a wooden stand showing a snowy family holiday movie scene of an original family building a snowman. The room is lit only by the warm glow of the tree lights and the TV. Very cozy, slow, nostalgic."}
+    {
+      "name": "breakfast",
+      "duration": 4,
+      "prompt": "The kid sits at a kitchen table covered with a red-and-green Christmas-pattern tablecloth and slowly scoops a spoonful of golden frosted corn flakes and milk from a white bowl. A glass of orange juice and a colorful plain cereal box with no logo sit beside the bowl. In the background a mom in a navy sweater and grey sweatpants washes dishes at the sink with her back turned; a small decorated Christmas tree with warm lights, a white fridge covered in kids' drawings and magnets, a small boxy CRT television on the counter showing a bright, colorful cartoon of an original orange fox, wood cabinets, a frosty window with falling snow.",
+      "use": 4.4
+    },
+    {
+      "name": "toy store",
+      "duration": 4,
+      "prompt": "The kid's two hands push open a pair of glass doors and the kid walks forward into a huge toy superstore at Christmas time. Shiny floor of big checkered tiles in red, yellow, blue and green; tall aisles stacked high with plush animals, action-figure boxes, dolls, bikes and board games, all in plain unbranded packaging; red and green holiday banners and silver garlands hanging from the ceiling with no readable words; bright fluorescent lights; families with shopping carts. The camera moves forward through the doors.",
+      "use": 4.4,
+      "blur": [
+        [
+          140,
+          80,
+          800,
+          330
+        ]
+      ]
+    },
+    {
+      "name": "minivan",
+      "duration": 4,
+      "prompt": "Night. The kid rides in the back seat of a 1990s family minivan, legs in light-blue jeans and white sneakers stretched out on the seat. Crinkly plain shopping bags full of wrapped presents and toy boxes are piled on the seat beside the kid. Mom and dad sit in the front seats, dad driving; through the windshield, colorful Christmas lights on houses and glowing streetlights slide past. Gentle road vibration, warm dim interior light.",
+      "use": 4.4
+    },
+    {
+      "name": "video store",
+      "duration": 4,
+      "prompt": "Inside a 1999 video rental store at Christmas. The kid's hand holds up a VHS tape box of a family holiday comedy with a snowy, illustrated cover and no readable title. Behind it, a display shelf of holiday VHS tapes with blurry unreadable covers, blue carpet, families browsing the aisles, tinsel garland and paper snowflakes along the ceiling, bright store lights.",
+      "use": 4.4
+    },
+    {
+      "name": "pizza dinner",
+      "duration": 4,
+      "prompt": "Night, a cozy family pizza restaurant in 1999. The kid's two hands hold a red pebbled plastic cup of soda over a red-and-white checkered tablecloth. A hot pan pizza with pepperoni sits in the middle of the table. Across the booth, a mom with shoulder-length brown hair in a cream knit sweater and a dad in a dark green sweater smile and laugh warmly at the kid. Red stained-glass hanging lamps, small Christmas decorations, warm golden light.",
+      "use": 4.4
+    },
+    {
+      "name": "movie night",
+      "duration": 4,
+      "prompt": "Night in a cozy 1999 living room. The kid, wearing red plaid flannel pajamas, feet in white socks resting on an ottoman, reaches a hand into a big bowl of popcorn; a plate of decorated Christmas sugar cookies sits nearby. In front: a fully lit Christmas tree with presents underneath and a boxy CRT television on a wooden stand showing a snowy family holiday movie scene of an original family building a snowman. The room is lit only by the warm glow of the tree lights and the TV. Very cozy, slow, nostalgic.",
+      "use": 4.4
+    }
   ]
 }

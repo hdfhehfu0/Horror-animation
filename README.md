@@ -239,11 +239,16 @@ Rebuild the audio: `python3 films/quieter/prep_narration.py && python3 films/qui
 
 ---
 
-# POV: You wake up as a Kid in December of 1999 (sixth film, in progress)
+# POV: You wake up as a Kid in December of 1999 (sixth film)
 
 A recreation of a photoreal "POV nostalgia" short: six first-person shots, each with a hard cut, of a kid's December day in 1999. The shots are breakfast cereal at the kitchen table, pushing through the doors of a giant toy store, the minivan ride home with bags of presents, holding up a VHS box in a video rental store, pizza with mom and dad, and popcorn in front of the Christmas tree. A red slab-serif title sits over the first three seconds, and the film ends on a slow sink to black.
 
-The shots are **real AI video clips** generated with the user's vidIQ connector (MiniMax H3, 768p, 9:16, 4 s each, 192 credits). Every prompt is original and unbranded: no real store logos, cereal mascots or film footage.
+The shots are **real AI video clips** generated with the user's vidIQ connector (MiniMax H3, 768p, 9:16, 4.5 s each; 140 credits including one retake). They are kept in `films/pov1999/clips/`.
+Every prompt is original and unbranded: no real store logos, cereal mascots or film footage. Where the model drifted towards something recognisable, the shot was fixed:
+- the toy-store ceiling banner is blurred in every frame (`"blur"` in `plan.json`);
+- the video-store shot was re-generated with faceless, snowy VHS covers.
+
+Output: `out/pov-1999.mp4` (1080×1920, 24 fps, 26.4 s, about −16.6 LUFS). The clips' own audio is replaced by the original music cue.
 
 ```
 films/pov1999/plan.json     the six shot prompts, model and lengths
@@ -252,4 +257,4 @@ films/pov1999/music.py      an original warm piano + music-box + sleigh-bell cue
 films/pov1999/assemble.py   scales and cuts the clips, title, warm grade, fade, music -> out/pov-1999.mp4
 ```
 
-Assemble once the clips exist: `python3 films/pov1999/assemble.py clip1.mp4 ... clip6.mp4`.
+Re-assemble: `python3 films/pov1999/assemble.py films/pov1999/clips/{1_breakfast,2_toystore,3_minivan,4_videostore,5_pizza,6_movienight}.mp4`.
