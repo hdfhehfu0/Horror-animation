@@ -259,3 +259,27 @@ films/pov1999/assemble.py   scales and cuts the clips, title, warm grade, fade, 
 ```
 
 Re-assemble: `python3 films/pov1999/assemble.py films/pov1999/clips/{1_breakfast,2_toystore,3_minivan,4_videostore,5_pizza,6_movienight}.mp4`.
+
+---
+
+# What if another galaxy hit us? (seventh film)
+
+Same format as Darker and Quieter: the same deep narrator, caption and FACT style and end cards, on a three.js street under an animated sky. Open **`galaxy.html`**, or render it with `node render.js --page galaxy.html` (writes `out/galaxy.mp4` and `out/galaxy.srt`).
+
+**The story.**
+- Tonight: Andromeda is a faint smudge above a quiet street. The **DISTANCE TO ANDROMEDA** counter starts at 2,500,000 ly, and a second line reads NOW.
+- The years run forward in billions. The street empties; the trees wither and fall; dunes swallow the road, the car and the lamps; the houses crumble. Meanwhile Andromeda swells across the sky.
+- The Large Magellanic Cloud crashes in first. Then the Milky Way tears into tidal tails, newborn stars light the sky, and the two galactic "hearts" spiral together. A flash, and the merged galaxy, **Milkomeda**, glows over the ruins.
+- *Or maybe not.* The tape rewinds (◀◀) back to tonight: 2025 simulations put the crash at only about a coin flip within 10 billion years.
+- Back on the street, something is standing in the road, looking up. *Something else already is.* Cut to black. "Wait." Then a PART 2 teaser.
+
+**How it's made.**
+- `core.js` runs a *story time* `TL.st(t)`. It moves forward with the narration, rewinds on "Or maybe not." and then holds on tonight. Every stage (street ageing, collision, merge) and the counter are functions of it, so the rewind plays everything backwards for free.
+- `world.js` is Darker's street with a transparent background, dunes that rise through the road, a dust coat over every material, and crumbling houses, falling trees and lamps, and a sinking car. The creature returns at the end.
+- `film.js` paints the sky behind the 3D scene, including a procedural Andromeda (log-spiral arms, core and dust lanes) that grows with the distance. It also adds the VHS rewind, the HUD and the captions.
+- Sound:
+  - recorded ElevenLabs effects: crickets (two shuffled layers, so the short takes never audibly loop), desert wind, a cosmic rumble, the LMC and merge blasts, a tape rewind and the creature's breath;
+  - a synthesised cosmic drone, a starburst shimmer, two pulses for the galactic cores that fuse at the merge, and a Milkomeda chord;
+  - everything in the future is cut dead on the rewind frame, and the effects are ducked about 5 dB under the narrator.
+
+Rebuild the audio: `python3 films/galaxy/prep_narration.py && python3 films/galaxy/mix.py`, then `node render.js --page galaxy.html`.
