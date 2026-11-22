@@ -307,3 +307,27 @@ The sequel teased at the end of *What if another galaxy hit us?*, made in the sa
   - from "No air." on, nothing plays but the narrator.
 
 Rebuild the audio: `python3 films/blackhole/prep_narration.py && python3 films/blackhole/mix.py`, then `node render.js --page blackhole.html`.
+
+---
+
+# What if Earth stopped spinning? (ninth film, Part 3 of the galaxy series)
+
+The sequel teased at the end of *What if a black hole passed through?*, with the same narrator, caption and FACT style, and end cards. Open **`spin.html`**, or render it with `node render.js --page spin.html` (writes `out/stopped-spinning.mp4` and `out/stopped-spinning.srt`).
+
+**The story.**
+- A sunny afternoon on the street. The **EARTH'S SPIN AT THE EQUATOR** counter reads 1,670 km/h, and the line under it reads 1 DAY = 24 HOURS.
+- *Now imagine it slowing down.* A ▶▶ TIME-LAPSE runs: the Sun races across the sky, shadows sweep the street, and lamps and windows come on each dusk. The days visibly get longer, the counter winds down and the day length climbs. The fact cards say days lengthen by about 1.8 ms per century, and that a day lasted about 18 hours 1.4 billion years ago.
+- *Then it stops.* The Sun freezes at noon, the counter reads 0 km/h, and 1 DAY = 1 YEAR.
+- The six-month day: SUNSET IN 182 DAYS counts down while the street bakes. The grass browns, everything bleaches, and heat haze shimmers. The fact card: without the spin, the oceans would drain toward the poles (Esri's Fraczek model).
+- A long sunset into a six-month night. Frost creeps in, and two streetlamps can't hold a steady light. Something walks down the road under the lamps, and its eyes catch the light: *And something has been waiting for it.* Cut to black. "Wait." Then a PART 4 teaser.
+
+**How it's made.**
+- `core.js` drives everything from a day clock `TL.phi(t)`. During the time-lapse, its rate is a decaying curve, integrated and scaled so the Sun stops exactly at noon on the word "stops". It then holds for the long day and sets into the night. The Sun's position, the daylight, twilight, lamps, windows and the counter all read from it.
+- `world.js` is the series' street with the key light following the Sun across the sky, so the shadows sweep. It adds the bleach of the long day, the rime of the long night, and the creature.
+- `film.js` paints the sky (day blue, orange dusk, stars), the Sun's disc and glare (streaking in the time-lapse), the heat haze, the badge and HUD, and the captions.
+- Sound:
+  - a spin hum whose pitch follows the counter, winding down like a record slowing to a stop, with a clock tick every quarter-day and a whoosh at each sunrise and sunset;
+  - a thud when the spin stops, cicadas and hot wind for the long day, a falling chord for the sunset, and a cold drone for the night;
+  - crickets that stop dead when the creature walks out of the dark, then its breath.
+
+Rebuild the audio: `python3 films/spin/prep_narration.py && python3 films/spin/mix.py`, then `node render.js --page spin.html`.

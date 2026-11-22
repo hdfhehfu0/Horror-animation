@@ -68,7 +68,7 @@
         env(o.frequency, pts.map(([t, k]) => [t, base * k])); o.connect(og).connect(lp);
       }
       env(lp.frequency, [[a, 300], [T_L + 2, 900], [T_S, 160]]);
-      env(gN.gain, [[a, 0], [T_L + 1.5, 0.05], [T_S - 3, 0.05], [T_S, 0.035], [b, 0]]);
+      env(gN.gain, [[a, 0], [T_L + 1.5, 0.09], [T_S - 3, 0.09], [T_S, 0.06], [b, 0]]);
       lp.connect(gN).connect(bus(1, 0, 0.3));
     }
     /* the time-lapse: a clock tick every quarter-day, a whoosh at every sunrise and sunset */
@@ -78,7 +78,7 @@
         const p = TL.phi(t);
         if (Math.floor(p * 4) !== Math.floor(last * 4)) {
           const q = Math.floor(p * 4) % 2, o = osc('square', q ? 1800 : 1400, t, 0.05);
-          o.connect(filt('bandpass', q ? 1800 : 1400, 6)).connect(amp(t, [[0, 0], [0.002, 0.05], [0.04, 0]])).connect(bus(1, q ? 0.25 : -0.25, 0.3));
+          o.connect(filt('bandpass', q ? 1800 : 1400, 6)).connect(amp(t, [[0, 0], [0.002, 0.08], [0.04, 0]])).connect(bus(1, q ? 0.25 : -0.25, 0.3));
         }
         if (Math.floor(p * 2) !== Math.floor(last * 2)) {
           const s = noise(WHITE, t - 0.45, 1.1), bp = filt('bandpass', 400, 0.9);
@@ -108,7 +108,7 @@
       const a = at(18) - 0.2, b = at(20) + 1;
       [57, 60, 64, 69].forEach((m, i) => { for (const dt of [-6, 7]) {
         const o = osc('sawtooth', U.mtof(m), a, b - a); o.detune.value = dt; env(o.detune, [[a, dt], [b, dt - 200]]);
-        o.connect(filt('lowpass', 1100)).connect(amp(a, [[0, 0], [2, 0.006], [b - a - 1.5, 0.006], [b - a, 0]])).connect(bus(1, (i - 1.5) * 0.35, 0.7));
+        o.connect(filt('lowpass', 1100)).connect(amp(a, [[0, 0], [2, 0.009], [b - a - 1.5, 0.009], [b - a, 0]])).connect(bus(1, (i - 1.5) * 0.35, 0.7));
       } });
     }
     /* the long night: a cold, low drone */
