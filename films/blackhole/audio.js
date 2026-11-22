@@ -67,7 +67,7 @@
       const a = at(5), b = end(12) + 0.6;
       const o1 = osc('sine', 41, a, b - a), o2 = osc('sine', 41.3, a, b - a);
       env(o2.frequency, [[a, 41.3], [TL.T_MOON, 43.5], [TL.T_THROW, 46]]);
-      const gN = amp(a, [[0, 0], [TL.T_MOON - a, 0.16], [TL.T_THROW - a + 0.2, 0.26], [b - a, 0]]);
+      const gN = amp(a, [[0, 0], [TL.T_MOON - a, 0.11], [TL.T_THROW - a + 0.2, 0.16], [b - a, 0]]);
       o1.connect(gN); o2.connect(gN); gN.connect(bus(1, 0, 0.2));
       // and a thin, high, uneasy whine that bends down with them
       const w = osc('sine', 1760, a + 2, b - a - 2); env(w.frequency, [[a + 2, 1760], [TL.T_THROW, 1320]]);
@@ -82,7 +82,7 @@
     /* Earth thrown out of orbit: a sub drop */
     {
       const t = TL.T_THROW, o = osc('sine', 52, t, 3.5); o.frequency.exponentialRampToValueAtTime(20, t + 3);
-      o.connect(amp(t, [[0, 0], [0.02, 0.6], [3.3, 0]])).connect(bus(1, 0, 0.3));
+      o.connect(amp(t, [[0, 0], [0.02, 0.36], [3.3, 0]])).connect(bus(1, 0, 0.3));
     }
     /* the lights go out: the mains hum winds down and dies */
     {
@@ -103,7 +103,7 @@
     /* "Nothing human.": one deep pulse you feel more than hear */
     {
       const t = TL.creature.stop, o = osc('sine', 40, t, 2.4); o.frequency.exponentialRampToValueAtTime(26, t + 2);
-      o.connect(amp(t, [[0, 0], [0.02, 0.5], [2.2, 0]])).connect(bus(1, 0, 0.2, master));
+      o.connect(amp(t, [[0, 0], [0.02, 0.2], [2.2, 0]])).connect(bus(1, 0, 0.2, master));
     }
     /* after the cut: a thin ring; a low drone under the end cards */
     {
