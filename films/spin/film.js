@@ -71,7 +71,7 @@
   function hud(c, t) {
     const v = Math.round(TL.speed(t)), day = TL.sun(t).day;
     // a soft shade behind the HUD so it reads on a bright sky
-    if (day > 0.01) { const sg = c.createLinearGradient(0, 120, 0, 520); sg.addColorStop(0, `rgba(10,16,28,${0.42 * day})`); sg.addColorStop(1, 'rgba(10,16,28,0)'); c.fillStyle = sg; c.fillRect(0, 120, W, 400); }
+    if (day > 0.01) { const sg = c.createLinearGradient(0, 0, 0, 560); sg.addColorStop(0, `rgba(10,16,28,${0.3 * day})`); sg.addColorStop(0.45, `rgba(10,16,28,${0.4 * day})`); sg.addColorStop(1, 'rgba(10,16,28,0)'); c.fillStyle = sg; c.fillRect(0, 0, W, 560); }
     c.save(); c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 10;
     c.fillStyle = 'rgba(235,238,242,0.9)'; c.font = `600 21px ${SANS}`; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
     if ('letterSpacing' in c) c.letterSpacing = '4px';
