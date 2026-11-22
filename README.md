@@ -283,3 +283,27 @@ Same format as Darker and Quieter: the same deep narrator, caption and FACT styl
   - everything in the future is cut dead on the rewind frame, and the effects are ducked about 5 dB under the narrator.
 
 Rebuild the audio: `python3 films/galaxy/prep_narration.py && python3 films/galaxy/mix.py`, then `node render.js --page galaxy.html`.
+
+---
+
+# What if a black hole passed through? (eighth film, Part 2 of the galaxy series)
+
+The sequel teased at the end of *What if another galaxy hit us?*, made in the same format: the same narrator, caption and FACT style, and end cards. Open **`blackhole.html`**, or render it with `node render.js --page blackhole.html` (writes `out/black-hole.mp4` and `out/black-hole.srt`).
+
+**The story.**
+- A moonlit night on the street, crickets, 15°C. In 2022 Hubble found the first black hole drifting alone, about 5,000 light-years away, and there could be 100 million more.
+- One heads our way, and you can't see it. Only the stars bend: a patch of sky smears into arcs and an Einstein ring around nothing. A targeting box tracks it, and the status line counts it down from light-years to AU.
+- Its gravity tears the Moon away. The Moon stretches and splits into lensed images. Then it throws Earth out of orbit: the whole sky swings in star trails and the frame shakes.
+- A dawn starts and fails. The Sun is just a bright star. The **AVERAGE TEMPERATURE** counter falls past −18°C in a week and −73°C in a year. The lights flicker and die, and frost creeps over everything.
+- The air freezes and falls as snow (nitrogen freezes at −210°C), and drifts bury the road. Earth is a rogue planet. With no air left, the stars stop twinkling and the Milky Way blazes, and the soundtrack goes completely silent.
+- In that silence something walks down the frozen road and stops under the Sun-star. Its eyes catch the light: *Nothing human.* Cut to black. "Wait." Then a PART 3 teaser.
+
+**How it's made.**
+- `film.js` draws the sky on an offscreen layer: a starfield stored in polar coordinates around a point far below the frame, so it can swing, plus two Milky Way bands and the Moon. Each frame, the region around the black hole is remapped pixel by pixel through the point-lens equation β = θ − θE²/θ, with magnification brightening the Einstein ring. That makes the lensing real image distortion, not a sprite.
+- `world.js` is the series' street. Frost lerps every cached material toward ice, snowdrifts rise through the road, the lamps flicker out one by one, the camera shakes on the throw, and the creature (with eyeshine) walks in at the end.
+- Sound:
+  - recorded ElevenLabs effects: crickets, the approach rumble, blasts for the Moon and the throw, a freezing wind that dies as the air freezes, relays clicking off, and ice groaning;
+  - a synthesised drone, two low tones beating faster as the lens grows, a swell into the Moon, a sub drop, the mains hum winding down, a glassy freeze shimmer, and one sub pulse on "Nothing human.";
+  - from "No air." on, nothing plays but the narrator.
+
+Rebuild the audio: `python3 films/blackhole/prep_narration.py && python3 films/blackhole/mix.py`, then `node render.js --page blackhole.html`.
