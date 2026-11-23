@@ -331,3 +331,47 @@ The sequel teased at the end of *What if a black hole passed through?*, with the
   - crickets that stop dead when the creature walks out of the dark, then its breath.
 
 Rebuild the audio: `python3 films/spin/prep_narration.py && python3 films/spin/mix.py`, then `node render.js --page spin.html`.
+
+---
+
+# What if the Moon crashed into Earth? (tenth film, first person)
+
+Part 4 of the galaxy series, made in the style of a second reference: a continuous, handheld **first-person** shot in a city. Its structure is analysed in `references/moon/ANALYSIS.md`; the reference video itself is not committed. Open **`moon.html`**, or render it with `node render.js --page moon.html` (writes `out/moon-pov.mp4` and `out/moon-pov.srt`).
+
+**The style (taken from the reference).**
+- **Countdown:** a small letter-spaced **THE MOON** label, a big gold serif **5 4 3 2 1**, and *IMAGINED SCENARIO*.
+- **Two voices:**
+  - a calm, deep documentary narrator, captioned in *white italic serif*;
+  - your own frightened prayers, captioned in **gold upright serif** ("What the...", "O Allah.", "O Allah, make this easy for me.", "O Allah!", and the shahada at the end).
+- **POV:** your gloved right hand out in front, later both hands on the railing, and your legs below you when you're lifted. The camera breathes, sways, walks, runs, whips round with motion blur, and is pulled up into the sky. The light runs day → dusk → night.
+
+**The story.**
+- In five seconds the Moon stops orbiting and starts to fall. It grows over the avenue. The gutter water runs toward it and a puddle stretches after it.
+- You run for the subway, and the water climbs up the stairs toward you. Back on the street at night, a taxi lifts off the road.
+- The Moon cracks with glowing fissures and breaks apart, and burning pieces streak down the avenue. You hold the curb railing while the buildings across the street tear off their foundations.
+- The railing bends, its bolts pull out, and you're lifted over the city. As you rise toward the broken Moon you say the shahada. A white flash, then nothing.
+
+**How it's made.**
+- `films/moon/prep_voices.py` splits the two voice takes (ElevenLabs: "Jason Abadi" narrator, "Lip" inner voice) at their pauses. It places each line on the timeline at the moment of its scene, following the reference's pacing, and writes `lines.js`.
+- `core.js` holds:
+  - the first-person camera path (keyframes with handheld breathing, walk bob and shake);
+  - the Moon's size, elevation, cracking and splitting;
+  - the 22 falling pieces with their impact points and times;
+  - every stage (water, litter, taxi, buildings, railing, lift).
+- `world.js` builds the city in three.js:
+  - about 350 buildings merged into a few meshes, with windows drawn by a shader (glass reflects the sky by day, some lit warm at night);
+  - the subway entrance with lit stairs, iron railings, trees, lamps and a taxi;
+  - water shaders and instanced debris;
+  - the hands, arms and legs.
+- `film.js` draws:
+  - the sky behind the city and the Moon where it really sits in your view: a procedural cratered face that cracks along Voronoi fissures and comes apart in drifting pieces;
+  - the meteors (streaks behind the buildings) and their impact flashes and dust;
+  - whip-pan motion blur, grade and grain;
+  - the countdown and the two caption styles.
+- Sound:
+  - recorded ElevenLabs effects: the city afternoon, gutter and stairwell water, car alarms, a rising wind and rumble, impact booms (each delayed by its distance at 340 m/s), the railing giving, and panicked breathing;
+  - a synthesised tense drone, sub hits, the crack groan and a rising rush.
+
+  The effects are ducked about 8 dB under the voices.
+
+Rebuild the audio: `python3 films/moon/prep_voices.py && python3 films/moon/mix.py`, then `node render.js --page moon.html`.

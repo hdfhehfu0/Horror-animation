@@ -54,11 +54,11 @@
       const lp = filt('lowpass', 220, 0.8), gN = ac.createGain();
       env(lp.frequency, [[0, 220], [5, 260], [40, 600], [66, 1100], [85, 1800]]);
       for (const [f, ty] of [[36.7, 'sawtooth'], [55, 'sawtooth'], [73.4, 'triangle'], [392, 'sine'], [415.3, 'sine']]) { const o = osc(ty, f, 0, DUR); o.detune.value = (U.hash(f) - 0.5) * 14; o.connect(lp); }
-      env(gN.gain, [[0, 0], [3, 0.012], [5, 0.02], [20, 0.026], [44, 0.04], [66, 0.055], [84.9, 0.08], [85.3, 0]]);
+      env(gN.gain, [[0, 0], [3, 0.012], [5, 0.02], [20, 0.024], [44, 0.032], [66, 0.04], [84.9, 0.055], [85.3, 0]]);
       lp.connect(gN).connect(bus(1, 0, 0.4));
     }
     /* "And starts to fall": a sub hit */
-    boom(TL.lurch, 48, 0.5, 3.2);
+    boom(TL.lurch, 48, 0.22, 3.2);
     /* it cracks: a deep groan sliding down, and splintering hits */
     {
       const t = 39.4, o = osc('sawtooth', 70, t, 6); o.frequency.exponentialRampToValueAtTime(34, t + 5.5);
@@ -66,14 +66,14 @@
       for (const dt of [0.2, 1.1, 2.4, 3.6, 5.0]) { const tt = t + dt; noise(WHITE, tt, 0.4).connect(filt('bandpass', 1400, 1.5)).connect(amp(tt, [[0, 0], [0.005, 0.12], [0.35, 0]])).connect(bus(1, (U.hash(dt) - 0.5) * 1.2, 0.6)); }
     }
     /* every impact: a thump, louder and lower the closer it lands */
-    for (const m of TL.meteors) { const d = Math.hypot(m.x + 9, m.z + 6), l = Math.min(0.5, 60 / d) * m.s; boom(m.t1 + d / 340, 44, l, 2.2); }
+    for (const m of TL.meteors) { const d = Math.hypot(m.x + 9, m.z + 6), l = Math.min(0.22, 30 / d) * m.s; boom(m.t1 + d / 340, 44, l, 2.2); }
     /* the jolts: the railing giving, the bolts */
-    boom(66.5, 40, 0.55, 3); boom(71.8, 36, 0.5, 3);
+    boom(66.5, 40, 0.22, 3); boom(71.8, 36, 0.2, 3);
     /* pulled up: a rising rush */
     {
       const a = 71.6, b = 85.35, s = noise(WHITE, a, b - a), bp = filt('bandpass', 300, 0.8);
       env(bp.frequency, [[a, 250], [b, 3200]]);
-      s.connect(bp).connect(amp(a, [[0, 0], [2, 0.08], [b - a - 0.4, 0.2], [b - a, 0]])).connect(bus(1, 0, 0.3));
+      s.connect(bp).connect(amp(a, [[0, 0], [2, 0.04], [b - a - 0.4, 0.09], [b - a, 0]])).connect(bus(1, 0, 0.3));
       for (const [f0, f1] of [[110, 440], [164.8, 659]]) { const o = osc('sawtooth', f0, a, b - a); o.frequency.exponentialRampToValueAtTime(f1, b); o.connect(filt('lowpass', 1500)).connect(amp(a, [[0, 0], [3, 0.008], [b - a - 0.3, 0.02], [b - a, 0]])).connect(bus(1, 0, 0.6)); }
     }
     return await ac.startRendering();
