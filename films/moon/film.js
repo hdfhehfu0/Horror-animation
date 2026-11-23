@@ -150,20 +150,20 @@
 
   /* ------------------------------ burning pieces falling into the city (behind the buildings) ------------------------------ */
   function meteorPath(m, k) {
-    const md = TL.moonDir(m.t0), D = 900;
-    const S = [m.x + md[0] * D * 0.5, (md[1] * 0.5 + 0.5) * D, m.z + md[2] * D * 0.5];
+    const md = TL.moonDir(m.t0), D = 1500;
+    const S = [m.x + md[0] * D * 0.3, (md[1] * 0.3 + 0.7) * D, m.z + md[2] * D * 0.3];
     const u = Math.pow(k, 1.35);
     return [S[0] + (m.x - S[0]) * u, S[1] * (1 - u), S[2] + (m.z - S[2]) * u];
   }
   function meteors(c, t) {
     for (const m of TL.meteors) {
       if (t < m.t0 || t > m.t1) continue;
-      const k = (t - m.t0) / (m.t1 - m.t0), H = meteorPath(m, k), T = meteorPath(m, Math.max(0, k - 0.18));
+      const k = (t - m.t0) / (m.t1 - m.t0), H = meteorPath(m, k), T = meteorPath(m, Math.max(0, k - 0.32));
       const a = World.project(...H), b = World.project(...T);
       if (!a.vis || !b.vis) continue;
-      const w = (6 + 12 * m.s) * Math.min(2.2, 500 / Math.max(80, a.d) + 0.7);
+      const w = (9 + 16 * m.s) * Math.min(2.2, 500 / Math.max(80, a.d) + 0.7);
       const gr = c.createLinearGradient(b.x, b.y, a.x, a.y); gr.addColorStop(0, 'rgba(255,120,40,0)'); gr.addColorStop(0.7, 'rgba(255,150,60,0.55)'); gr.addColorStop(1, 'rgba(255,240,210,0.95)');
-      c.save(); c.strokeStyle = gr; c.lineCap = 'round'; c.lineWidth = w; c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(a.x, a.y); c.stroke(); c.restore();
+      c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = gr; c.lineCap = 'round'; c.lineWidth = w; c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(a.x, a.y); c.stroke(); c.restore();
       glow(c, a.x, a.y, w * 6, '255,190,120', 0.8);
     }
   }

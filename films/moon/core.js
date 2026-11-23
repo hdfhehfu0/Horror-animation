@@ -67,8 +67,8 @@
     [42.8, -9.55, 1.68, -1.8, 6.20, 0.56],
     [44.8, -9.0, 1.5, -5.2, 5.55, -0.30],      // "Hold on to something": to the railing on the curb
     [46.6, -8.95, 1.40, -6.0, 5.40, -0.42],    // hands on the rail
-    [48.8, -8.95, 1.42, -6.0, 5.90, 0.10],     // look up the avenue: the pieces start to fall
-    [57.0, -8.95, 1.42, -6.0, 5.95, 0.14],
+    [48.8, -8.95, 1.42, -6.0, 6.24, 0.22],     // look up the avenue: the pieces start to fall
+    [57.0, -8.95, 1.42, -6.0, 6.30, 0.26],
     [59.2, -8.95, 1.42, -6.0, 5.55, 0.16],     // across the street: the buildings are going up
     [63.0, -8.95, 1.42, -6.0, 5.60, 0.34],
     [65.0, -8.95, 1.40, -6.0, 5.40, -0.50],    // down at your hands
@@ -139,7 +139,7 @@
     const far = R(), side = R();
     // most land down the avenue toward the Moon; some across the street, a few close
     let x, z;
-    if (side < 0.4) { x = -40 + R() * 220; z = -160 - far * 520; }
+    if (side < 0.72) { x = -70 + R() * 180; z = -180 - far * 520; }
     else if (side < 0.92) { x = 50 + R() * 220; z = -30 - R() * 230; }
     else { x = -40 - R() * 160; z = -80 - R() * 200; }
     M.push({ t1: ti, t0: ti - 1.4 - R() * 1.2, x, z, s: 0.6 + R() * 1.2, seed: R() * 100 });
