@@ -342,7 +342,7 @@ Part 4 of the galaxy series, made in the style of a second reference: a continuo
 - **Countdown:** a small letter-spaced **THE MOON** label, a big gold serif **5 4 3 2 1**, and *IMAGINED SCENARIO*.
 - **Two voices:**
   - a calm, deep documentary narrator, captioned in *white italic serif*;
-  - your own frightened prayers, captioned in **gold upright serif** ("What the...", "O Allah.", "O Allah, make this easy for me.", "O Allah!", and the shahada at the end).
+  - your own frightened prayers, captioned in **gold upright serif** ("What the...", "Oh God.", "Oh God, make this easy for me.", "Oh God!", and the shahada at the end).
 - **POV:** your gloved right hand out in front, later both hands on the railing, and your legs below you when you're lifted. The camera breathes, sways, walks, runs, whips round with motion blur, and is pulled up into the sky. The light runs day → dusk → night.
 
 **The story.**

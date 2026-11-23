@@ -27,9 +27,9 @@ window.MOON_LINES = [
 ],
 [
 15.5,
-16.3,
+16.54,
 "inner",
-"O Allah."
+"Oh God."
 ],
 [
 19.0,
@@ -39,9 +39,9 @@ window.MOON_LINES = [
 ],
 [
 23.0,
-25.24,
+24.94,
 "inner",
-"O Allah, make this easy for me."
+"Oh God, make this easy for me."
 ],
 [
 26.0,
@@ -59,7 +59,7 @@ window.MOON_LINES = [
 37.6,
 38.4,
 "inner",
-"O Allah."
+"Oh God."
 ],
 [
 39.5,
@@ -87,9 +87,9 @@ window.MOON_LINES = [
 ],
 [
 66.5,
-67.56,
+67.5,
 "inner",
-"O Allah!"
+"Oh God!"
 ],
 [
 68.2,

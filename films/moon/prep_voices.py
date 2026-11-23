@@ -1,7 +1,7 @@
 """Moon (POV): cut the two voice takes into lines and place each line on the film timeline.
 
 The narrator (calm, deep; white italic captions) and the inner voice (the POV character's prayers; gold
-captions) were generated as one take each, with a pause between lines. Each take is split at its pauses,
+captions) were generated as one take each (the four "Oh God" lines later re-recorded as their own take), with a pause between lines. Each take is split at its pauses,
 and every line is set at the moment its scene plays (SLOTS), following the reference's pacing.
 Whispered lines are lifted so they read over the effects.
 
@@ -28,14 +28,14 @@ NARR = [  # (start on the film timeline, caption)   -- one entry per line of the
     (68.2, 'The railing is holding you.'),
     (69.6, "It's starting to bend."),
 ]
-INNER = [  # (start, caption, target loudness of the line in dBFS RMS)
-    (5.45, 'What the...', -21),
-    (15.5, 'O Allah.', -23),
-    (23.0, 'O Allah, make this easy for me.', -21),
-    (37.6, 'O Allah.', -23),
-    (66.5, 'O Allah!', -18),
-    (75.0, 'I bear witness that there is no deity except Allah,', -21),
-    (78.6, 'and I bear witness that Muhammad is His servant and Messenger.', -21),
+INNER = [  # (start, caption, target loudness of the line in dBFS RMS, take, line in that take)
+    (5.45, 'What the...', -21, 'inner', 0),
+    (15.5, 'Oh God.', -23, 'god', 0),
+    (23.0, 'Oh God, make this easy for me.', -21, 'god', 1),
+    (37.6, 'Oh God.', -23, 'god', 2),
+    (66.5, 'Oh God!', -18, 'god', 3),
+    (75.0, 'I bear witness that there is no deity except Allah,', -21, 'inner', 5),
+    (78.6, 'and I bear witness that Muhammad is His servant and Messenger.', -21, 'inner', 6),
 ]
 
 def load(path):
@@ -59,10 +59,12 @@ def split(x, thr_db, min_gap=0.28, min_len=0.15):
         i = j
     return out
 
-narr, inner = load(B + 'audio/raw/narr_a.mp3'), load(B + 'audio/raw/inner_a.mp3')
-ns, ins = split(narr, -42), split(inner, -46)
+narr = load(B + 'audio/raw/narr_a.mp3')
+takes = {'inner': load(B + 'audio/raw/inner_a.mp3'), 'god': load(B + 'audio/raw/god_a.mp3')}   # god_a: the "Oh God" lines, re-recorded
+cuts = {k: split(x, -46) for k, x in takes.items()}
+ns = split(narr, -42)
 ns = ns[:4] + [[ns[4][0], ns[5][1]]] + ns[6:]          # "climbing... up the stairs" stays one line
-assert len(ns) == len(NARR) and len(ins) == len(INNER), (len(ns), len(ins))
+assert len(ns) == len(NARR) and len(cuts['inner']) == 7 and len(cuts['god']) == 4, (len(ns), {k: len(v) for k, v in cuts.items()})
 
 film = np.zeros(int(DUR * SR), dtype=np.float32)
 def put(seg, t, gain=1.0):
@@ -74,8 +76,9 @@ lines = []
 ng = 10 ** (-19 / 20) / rms(np.concatenate([narr[int(a * SR):int(b * SR)] for a, b in ns]))
 for (t, text), (a, b) in zip(NARR, ns):
     seg = narr[int(a * SR):int(b * SR)]; put(seg, t, ng); lines.append([round(t, 3), round(t + (b - a), 3), 'narr', text])
-for (t, text, db), (a, b) in zip(INNER, ins):
-    seg = inner[int(a * SR):int(b * SR)]; put(seg, t, 10 ** (db / 20) / rms(seg)); lines.append([round(t, 3), round(t + (b - a), 3), 'inner', text])
+for t, text, db, take, k in INNER:
+    a, b = cuts[take][k]; seg = takes[take][int(a * SR):int(b * SR)]
+    put(seg, t, 10 ** (db / 20) / rms(seg)); lines.append([round(t, 3), round(t + (b - a), 3), 'inner', text])
 lines.sort()
 for i in range(len(lines) - 1): assert lines[i][1] < lines[i + 1][0] + 0.05, lines[i:i + 2]
 film = np.clip(film, -0.98, 0.98)
