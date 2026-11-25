@@ -2,8 +2,8 @@
 
 The friend (deep voice, "Brian"; white captions) and the hero (the POV, "Lip"; #FFD54A captions) were generated
 as one take each. Each take is split at its pauses; pieces that belong to one line are joined (GROUPS), and every
-line is set where its scene plays (start times below). The hero's "Subhan Allah" stays Arabic in the sound with an
-accurate English caption (pronunciation review pending).
+line is set where its scene plays (start times below). The take's fifth piece ("Subhan Allah") is not used:
+the owner asked for it to be removed, voice and caption.
 
 Writes films/planet/lines.js, films/planet/audio/voice.wav/.mp3 and films/planet/voice-data.js.
 usage: python3 films/planet/prep_voices.py
@@ -28,7 +28,6 @@ HERO = [  # (start, caption, pieces, loudness dBFS RMS)
     (8.7, 'What is that?', [0], -21),
     (21.8, 'Those are its rings...', [1], -23),
     (34.0, "The water... it's going out.", [2, 3], -21),
-    (46.0, 'Glory be to God.', [4], -22),          # spoken: "Subhan Allah"
 ]
 
 def load(path):

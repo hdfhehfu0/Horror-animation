@@ -56,12 +56,6 @@ window.PL_LINES = [
 "The Moon lifts the oceans about half a meter. This could lift them kilometers high."
 ],
 [
-46.0,
-47.32,
-"hero",
-"Glory be to God."
-],
-[
 49.2,
 50.18,
 "friend",

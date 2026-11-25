@@ -46,32 +46,19 @@
     float fbm(vec3 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 5; i++) { s += a * n3(p); p = p * 2.03 + 1.7; a *= 0.5; } return s; }
   `;
 
-  /* ------------------------------ the sky, baked once (spec §3, §4) ------------------------------ */
-  // star_layer(scale, keep, gain, rad_px, seed): Voronoi point stars in 3D, brightness random^9 x gain, gaussian cores,
-  // colour from the temperature ramp only for the brightest few percent; uPx = radians per texel of the cube face.
-  const BAKE_FS = `
-    uniform float uPx; uniform float uLayer; uniform vec3 uMWa; uniform vec3 uMWb; uniform vec3 uMWc;
-    uniform vec3 uHero1; uniform vec3 uHero2;
-    varying vec3 vDir;
-    ${NOISE}
+  /* ------------------------------ the sky (spec §3, §4) ------------------------------
+     Point stars are drawn per screen pixel in the dome shader, so every star is a crisp gaussian core rad_px screen
+     pixels wide at any lens: star_layer(scale, keep, gain, rad_px, seed), brightness random^9 x gain, colour from the
+     temperature ramp only for the brightest few percent. The brightest also carry a faint bloom and scintillate a
+     little, more near the horizon. The Milky Way's unresolved light (gold cloud, forked ragged dust lane, rose wisps,
+     emission nebulae, lavender-to-blue far end) and the density masks are baked once into cube textures. A few
+     meteors cross the sky during the long holds. */
+  const SKYLIB = `
+    uniform vec3 uMWa; uniform vec3 uMWb; uniform vec3 uMWc;
     vec3 tempCol(float k){
       vec3 c[7]; c[0]=vec3(1.0,0.45,0.25); c[1]=vec3(1.0,0.62,0.32); c[2]=vec3(1.0,0.82,0.55); c[3]=vec3(1.0,0.92,0.80);
       c[4]=vec3(0.70,0.82,1.0); c[5]=vec3(0.55,0.68,1.0); c[6]=vec3(0.45,0.58,1.0);
       float x = clamp(k, 0.0, 0.9999) * 6.0; int i = int(floor(x)); return mix(c[i], c[min(i + 1, 6)], fract(x));
-    }
-    vec3 starLayer(vec3 d, float scale, float keep, float gain, float rad, float seed){
-      vec3 p = d * scale, c0 = floor(p), f = p - c0, o = step(0.5, f) - 1.0, acc = vec3(0.0);
-      for (int i = 0; i < 8; i++) {
-        float fi = float(i); vec3 c = c0 + o + vec3(mod(fi, 2.0), mod(floor(fi / 2.0), 2.0), floor(fi / 4.0));
-        vec3 hh = h3(c + seed);
-        if (hh.x > keep) continue;
-        vec3 sp = c + 0.5 + (h3(c + seed + 7.13) - 0.5) * 0.7;
-        float ang = length(d - normalize(sp)), px = ang / uPx;
-        float b = pow(hh.y, 9.0) * gain, gg = exp(-px * px / (2.0 * rad * rad));
-        vec3 col = mix(vec3(1.0), tempCol(hh.z), smoothstep(0.80, 0.97, hh.y));
-        acc += col * b * gg;
-      }
-      return acc;
     }
     // band coordinates: ll along the Milky Way (0 at the gold cloud), bb across it (radians)
     void band(vec3 d, out float ll, out float bb){
@@ -79,9 +66,15 @@
       bb = asin(clamp(dot(d, n), -1.0, 1.0)); ll = atan(dot(d, u2), dot(d, u1));
     }
     float gauss(float x, float s){ return exp(-x * x / (2.0 * s * s)); }
-    vec3 spot(vec3 d, vec3 s, vec3 col, float core, float halo){
-      float a = degrees(length(d - s));
-      return col * (core * exp(-a * a / (2.0 * 0.15 * 0.15 * 0.25)) + halo * exp(-a * a / (2.0 * 0.9 * 0.9 * 0.25)));
+  `;
+  const BAKE_FS = `
+    uniform float uLayer; varying vec3 vDir;
+    ${NOISE}
+    ${SKYLIB}
+    float neb(vec3 d, float ll, float bb, float l0, float b0, float s, float seed){
+      vec2 q = vec2(ll - l0, bb - b0); float r = length(q * vec2(0.8, 1.2));
+      float f = fbm(d * 26.0 + seed), g = fbm(d * 70.0 + seed * 2.0);
+      return exp(-r * r / (2.0 * s * s)) * smoothstep(0.25, 0.75, f) * (0.55 + 0.9 * g);
     }
     void main(){
       vec3 d = normalize(vDir);
@@ -95,95 +88,155 @@
       float lane2 = ll < f0 ? 0.0 : gauss(bb + kk * (ll - f0) * 0.35, w * 0.8);
       float lanes = max(lane1, lane2) * smoothstep(-1.2, -0.3, ll) * (1.0 - smoothstep(0.9, 1.4, ll));
       float dust = 1.0 - 0.88 * lanes * (0.55 + 0.45 * ragged);
-      vec3 col = vec3(0.0);
-      if (uLayer < 0.5) {            // A: the bright population and the named stars
-        col += starLayer(d, 70.0, 0.10, 6.5, 1.1, 0.0);
-        col += spot(d, uHero1, vec3(0.66, 0.80, 1.0), 16.0, 0.38) + spot(d, uHero2, vec3(1.0, 0.62, 0.26), 13.0, 0.32);
-      } else if (uLayer < 1.5) {     // B: medium, faint, very faint (patchy) and the star cloud inside the band
-        col += starLayer(d, 190.0, 0.12, 2.8, 0.9, 31.0) * patchM;
-        col += starLayer(d, 420.0, 0.14, 1.3, 0.85, 77.0) * patchM;
-        col += starLayer(d, 640.0, 0.12, 0.9, 0.8, 151.0) * patchM;
-        col += starLayer(d, 760.0, 0.30, 1.5, 0.8, 113.0) * inBand * clumps * dust * 0.55;
-      } else {                        // C: the Milky Way's light (body, gold cloud, forked dust lane, rose wisps, far end)
-        float body = gauss(bb, 0.12) * (0.45 + 0.55 * fbm(d * 3.0)) * (0.7 + 0.6 * fbm(d * 9.0 + 4.0));
-        body *= smoothstep(-1.6, -0.8, ll) * (1.0 - smoothstep(1.1, 1.8, ll));
-        float cloud = gauss(ll, 0.30) * gauss(bb, 0.10) * 4.2;
-        float lum = body + cloud * (0.6 + 0.4 * fbm(d * 6.0));
-        lum *= dust * (0.6 + 0.4 * clumps);
-        float k = clamp((ll + 0.4) / 1.7, 0.0, 1.0);
-        vec3 tone = k < 0.2 ? mix(vec3(1.0, 0.70, 0.36), vec3(1.0, 0.78, 0.46), k / 0.2)
-                  : k < 0.45 ? mix(vec3(1.0, 0.78, 0.46), vec3(0.98, 0.90, 0.78), (k - 0.2) / 0.25)
-                  : k < 0.7 ? mix(vec3(0.98, 0.90, 0.78), vec3(0.80, 0.70, 1.0), (k - 0.45) / 0.25)
-                  : mix(vec3(0.80, 0.70, 1.0), vec3(0.45, 0.60, 1.0), (k - 0.7) / 0.3);
-        col = tone * lum * 0.24;
-        float rose = smoothstep(0.0, 0.08, bb) * gauss(bb - 0.14, 0.08) * gauss(ll - 0.1, 0.35) * (0.5 * fbm(d * 7.0) + 0.5 * fbm(d * 18.0 + 3.0));
-        col += vec3(0.95, 0.36, 0.50) * 0.95 * rose * 0.24 * 1.6;
+      if (uLayer < 0.5) {             // M: density masks for the per-pixel stars
+        gl_FragColor = vec4(patchM, inBand * clumps * dust, dust, 1.0);
+        return;
       }
+      // C: the Milky Way's light
+      float body = gauss(bb, 0.12) * (0.45 + 0.55 * fbm(d * 3.0)) * (0.7 + 0.6 * fbm(d * 9.0 + 4.0));
+      body *= smoothstep(-1.6, -0.8, ll) * (1.0 - smoothstep(1.1, 1.8, ll));
+      float cloud = gauss(ll, 0.30) * gauss(bb, 0.10) * 4.2;
+      float lum = body + cloud * (0.6 + 0.4 * fbm(d * 6.0));
+      lum *= 0.75 + 0.5 * fbm(d * 24.0 + 9.0);                         // the unresolved star clouds are mottled, not smooth
+      lum *= dust * (0.6 + 0.4 * clumps);
+      float k = clamp((ll + 0.4) / 1.7, 0.0, 1.0);
+      vec3 tone = k < 0.2 ? mix(vec3(1.0, 0.70, 0.36), vec3(1.0, 0.78, 0.46), k / 0.2)
+                : k < 0.45 ? mix(vec3(1.0, 0.78, 0.46), vec3(0.98, 0.90, 0.78), (k - 0.2) / 0.25)
+                : k < 0.7 ? mix(vec3(0.98, 0.90, 0.78), vec3(0.80, 0.70, 1.0), (k - 0.45) / 0.25)
+                : mix(vec3(0.80, 0.70, 1.0), vec3(0.45, 0.60, 1.0), (k - 0.7) / 0.3);
+      vec3 col = tone * lum * 0.24;
+      float rose = smoothstep(0.0, 0.08, bb) * gauss(bb - 0.14, 0.08) * gauss(ll - 0.1, 0.35) * (0.5 * fbm(d * 7.0) + 0.5 * fbm(d * 18.0 + 3.0));
+      col += vec3(0.95, 0.36, 0.50) * 0.95 * rose * 0.24 * 1.6;
+      // emission nebulae strung along the band: hydrogen-red knots with fine filaments, one bluer reflection haze
+      float e = neb(d, ll, bb, -0.30, 0.012, 0.035, 1.0) + 0.8 * neb(d, ll, bb, 0.34, -0.035, 0.028, 5.0) + 0.6 * neb(d, ll, bb, 0.66, 0.045, 0.04, 9.0) + 0.5 * neb(d, ll, bb, -0.62, -0.02, 0.03, 13.0);
+      col += vec3(0.95, 0.28, 0.36) * e * 0.11 * dust;
+      col += vec3(0.40, 0.55, 1.0) * neb(d, ll, bb, 0.20, 0.13, 0.03, 17.0) * 0.035;
       gl_FragColor = vec4(col, 1.0);
     }`;
+  let MW;
   function bakeSky() {
-    const mw = { a: dirAzEl(-74, 2), b: dirAzEl(62, 58), c: dirAzEl(-15, 37) };   // the band rises from the lower left, the gold cloud up-left of the planet
+    MW = { a: dirAzEl(-74, 2), b: dirAzEl(62, 58), c: dirAzEl(-15, 37) };   // the band rises from the lower left, the gold cloud up-left of the planet
     const bakeMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false,
-      uniforms: { uPx: { value: 0 }, uLayer: { value: 0 }, uMWa: { value: mw.a }, uMWb: { value: mw.b }, uMWc: { value: mw.c },
-        uHero1: { value: dirAzEl(21, 32) }, uHero2: { value: dirAzEl(-36, 44) } },
+      uniforms: { uLayer: { value: 0 }, uMWa: { value: MW.a }, uMWb: { value: MW.b }, uMWc: { value: MW.c } },
       vertexShader: 'varying vec3 vDir;\nvoid main(){\n vDir = position;\n gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n}',
       fragmentShader: BAKE_FS,
     });
     const bs = new THREE.Scene(); bs.add(new THREE.Mesh(new THREE.SphereGeometry(10, 96, 48), bakeMat));
-    for (const [name, layer, size] of [['A', 0, 1536], ['B', 1, 1536], ['C', 2, 512]]) {
+    for (const [name, layer, size] of [['M', 0, 512], ['C', 1, 1024]]) {
       const rt = new THREE.WebGLCubeRenderTarget(size, { type: THREE.HalfFloatType, generateMipmaps: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
       const cc = new THREE.CubeCamera(0.1, 100, rt);
-      bakeMat.uniforms.uLayer.value = layer; bakeMat.uniforms.uPx.value = (Math.PI / 2) / size;
-      cc.update(renderer, bs); cubes[name] = rt.texture;
+      bakeMat.uniforms.uLayer.value = layer; cc.update(renderer, bs); cubes[name] = rt.texture;
     }
     bakeMat.dispose();
   }
-  // the dome, every frame: base midnight blue, horizon lift, airglow, dusk, light pollution, then the gated layers
+  // meteors: [scene time, duration, start az/el, end az/el, brightness]
+  const METEORS = [[13.1, 0.55, -15, 41, -5, 27, 1.0], [26.1, 0.45, -21, 25, -13, 15, 0.8], [45.7, 0.7, 7, 49, 15, 35, 1.2]];
+  // the dome, every frame: base midnight blue, horizon lift, airglow, dusk, light pollution, the stars, the Milky Way, meteors
   function makeDome() {
     skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
-      uniforms: { uA: { value: cubes.A }, uB: { value: cubes.B }, uC: { value: cubes.C }, uVisB: { value: 0 }, uVisF: { value: 0 }, uVisMW: { value: 0 },
-        uDusk: { value: 1 }, uLP: { value: 1 }, uSun: { value: new THREE.Vector3() } },
+      uniforms: { uM: { value: cubes.M }, uC: { value: cubes.C }, uVisB: { value: 0 }, uVisF: { value: 0 }, uVisMW: { value: 0 },
+        uDusk: { value: 1 }, uLP: { value: 1 }, uSun: { value: new THREE.Vector3() }, uPx: { value: 0.0006 }, uS: { value: 0 },
+        uMWa: { value: MW.a }, uMWb: { value: MW.b }, uMWc: { value: MW.c }, uHero1: { value: dirAzEl(21, 32) }, uHero2: { value: dirAzEl(-36, 44) },
+        uMA: { value: METEORS.map((m) => dirAzEl(m[2], m[3])) }, uMB: { value: METEORS.map((m) => dirAzEl(m[4], m[5])) },
+        uMT: { value: METEORS.map((m) => new THREE.Vector3(m[0], m[1], m[6])) } },
       vertexShader: 'varying vec3 vDir;\nvoid main(){\n vDir = position;\n vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n gl_Position = p.xyww;\n}',
-      fragmentShader: `uniform samplerCube uA; uniform samplerCube uB; uniform samplerCube uC; uniform float uVisB; uniform float uVisF; uniform float uVisMW;
-        uniform float uDusk; uniform float uLP; uniform vec3 uSun; varying vec3 vDir;
+      fragmentShader: `uniform samplerCube uM; uniform samplerCube uC; uniform float uVisB; uniform float uVisF; uniform float uVisMW;
+        uniform float uDusk; uniform float uLP; uniform vec3 uSun; uniform float uPx; uniform float uS; uniform vec3 uHero1; uniform vec3 uHero2;
+        uniform vec3 uMA[3]; uniform vec3 uMB[3]; uniform vec3 uMT[3];
+        varying vec3 vDir;
         ${NOISE}
+        ${SKYLIB}
+        vec3 starLayer(vec3 d, float scale, float keep, float gain, float rad, float seed, float tw, float bloom){
+          // a layer whose stars are smaller than its cells can resolve (wide lenses) fades into the unresolved glow
+          float rc = rad * uPx * scale, fade = 1.0 - smoothstep(0.32, 0.55, rc);
+          if (fade <= 0.0) return vec3(0.0);
+          vec3 p = d * scale, c0 = floor(p), f = p - c0, o = step(0.5, f) - 1.0, acc = vec3(0.0);
+          for (int i = 0; i < 8; i++) {
+            float fi = float(i); vec3 c = c0 + o + vec3(mod(fi, 2.0), mod(floor(fi / 2.0), 2.0), floor(fi / 4.0));
+            vec3 hh = h3(c + seed);
+            if (hh.x > keep) continue;
+            float b = pow(hh.y, 9.0) * gain;
+            if (b < 0.003) continue;
+            vec3 sp = normalize(c + 0.5 + (h3(c + seed + 7.13) - 0.5) * 0.55);
+            float px = length(d - sp) / uPx;
+            float shape = exp(-px * px / (2.0 * rad * rad)) + bloom * smoothstep(0.86, 0.995, hh.y) * 0.04 * exp(-px * px / (2.0 * 16.0 * rad * rad));
+            float sc = 1.0 + tw * smoothstep(0.6, 0.9, hh.y) * (0.6 * sin(uS * (11.0 + 9.0 * hh.z) + hh.x * 63.0) + 0.4 * sin(uS * (23.0 + 7.0 * hh.y) + hh.z * 41.0));
+            vec3 col = mix(vec3(1.0), tempCol(hh.z), smoothstep(0.80, 0.97, hh.y));
+            acc += col * b * sc * shape;
+          }
+          return acc * fade;
+        }
+        vec3 spot(vec3 d, vec3 s, vec3 col, float core, float halo){
+          float a = degrees(length(d - s));
+          return col * (core * exp(-a * a / (2.0 * 0.15 * 0.15 * 0.25)) + halo * exp(-a * a / (2.0 * 0.9 * 0.9 * 0.25)));
+        }
+        vec3 meteor(vec3 d, vec3 A, vec3 B, vec3 T){
+          float p = (uS - T.x) / T.y; if (p < 0.0 || p > 1.0) return vec3(0.0);
+          vec3 n = normalize(cross(A, B)); float L = acos(clamp(dot(A, B), -1.0, 1.0));
+          float perp = abs(asin(clamp(dot(d, n), -1.0, 1.0))) / uPx;
+          if (perp > 6.0) return vec3(0.0);
+          float x = atan(dot(d, cross(n, A)), dot(d, A)), head = p * L, tail = max(0.0, head - L * 0.45);
+          if (x > head + 2.0 * uPx || x < tail) return vec3(0.0);
+          float along = smoothstep(tail, head, x) * (x > head ? exp(-pow((x - head) / uPx, 2.0)) : 1.0);
+          float life = sin(3.14159 * p);
+          float w = exp(-perp * perp / 2.0) + 0.12 * exp(-perp * perp / 18.0);
+          vec3 c = mix(vec3(1.0, 0.72, 0.45), vec3(0.85, 1.0, 0.92), smoothstep(0.6, 1.0, along));
+          return c * along * along * w * life * 2.2 * T.z;
+        }
         void main(){
           vec3 d = normalize(vDir); float el = max(d.y, 0.0);
           vec3 col = mix(vec3(0.014, 0.021, 0.042), vec3(0.0030, 0.0050, 0.0140), pow(el, 0.6));
           col += vec3(0.008, 0.013, 0.012) * (1.0 - smoothstep(0.0, 0.18, el));
           col += vec3(0.004, 0.011, 0.006) * smoothstep(0.02, 0.08, el) * (1.0 - smoothstep(0.1, 0.26, el)) * (0.6 + 0.4 * n3(d * 6.0));
-          // dusk: the sun just set behind you (west); a warm band over the west, a cooler blue lifting the east
+          // dusk: the sun just set behind you; a warm band on that side, a cooler blue lifting the rest
           float toSun = max(dot(normalize(vec3(d.x, 0.0, d.z)), normalize(vec3(uSun.x, 0.0, uSun.z))), 0.0);
           vec3 duskC = mix(vec3(0.060, 0.085, 0.170), vec3(0.012, 0.024, 0.065), pow(el, 0.5)) + vec3(0.55, 0.22, 0.08) * pow(toSun, 3.0) * exp(-el * 9.0);
           col = mix(col, duskC, uDusk);
           // the city's glow: warm, low, behind you and to the sides
           float dome = pow(1.0 - el, 1.35) * smoothstep(-0.2, 0.6, d.z + 0.3 * abs(d.x));
           col += vec3(0.50, 0.29, 0.14) * 0.09 * dome * uLP;
-          vec3 st = textureCube(uA, d).rgb * uVisB + textureCube(uB, d).rgb * uVisF;
-          st = max(st - 0.010, 0.0) * 1.03;                    // the faintest grain sinks into the navy
-          st *= (1.0 - 0.75 * uLP * dome) * smoothstep(0.0, 0.05, d.y);
-          st = st / (1.0 + 0.35 * st);                            // glowing things keep their structure
-          vec3 mw = textureCube(uC, d).rgb * uVisMW * smoothstep(0.0, 0.16, d.y) * (1.0 - 0.6 * uLP);
-          col += st + mw;
+          if (d.y > -0.01) {
+            vec3 m = textureCube(uM, d).rgb;
+            float tw = 0.12 + 0.4 * (1.0 - smoothstep(0.04, 0.5, d.y));
+            vec3 st = starLayer(d, 70.0, 0.10, 6.5, 1.1, 0.0, tw, 1.0) * uVisB;
+            st += spot(d, uHero1, vec3(0.66, 0.80, 1.0), 16.0, 0.38) * uVisB + spot(d, uHero2, vec3(1.0, 0.62, 0.26), 13.0, 0.32) * uVisB;
+            if (uVisF > 0.003) {
+              vec3 f = starLayer(d, 190.0, 0.12, 2.8, 0.9, 31.0, tw * 0.6, 0.0) * m.r;
+              f += starLayer(d, 420.0, 0.14, 1.3, 0.85, 77.0, 0.0, 0.0) * m.r;
+              f += starLayer(d, 640.0, 0.12, 0.9, 0.8, 151.0, 0.0, 0.0) * m.r;
+              if (m.g > 0.01) f += starLayer(d, 760.0, 0.30, 1.5, 0.8, 113.0, 0.0, 0.0) * m.g * 0.32;
+              st += f * uVisF;
+            }
+            st = max(st - 0.006, 0.0);                             // the faintest grain sinks into the navy
+            st *= (1.0 - 0.75 * uLP * dome) * smoothstep(0.0, 0.05, d.y);
+            float pk = max(st.r, max(st.g, st.b));
+            st *= 1.25 / (1.0 + 0.4 * pk);                         // bright cores roll off in proportion: colour survives in the halo
+            vec3 mw = textureCube(uC, d).rgb * uVisMW * smoothstep(0.0, 0.16, d.y) * (1.0 - 0.6 * uLP);
+            vec3 mt = vec3(0.0);
+            for (int i = 0; i < 3; i++) mt += meteor(d, uMA[i], uMB[i], uMT[i]);
+            col += st + mw + mt * smoothstep(0.0, 0.05, d.y);
+          }
           if (d.y < 0.0) col = mix(col, vec3(0.010, 0.016, 0.030), smoothstep(0.0, -0.05, d.y));
           gl_FragColor = vec4(col, 1.0);
           #include <colorspace_fragment>
         }`,
     });
-    const s = new THREE.Mesh(new THREE.SphereGeometry(15000, 64, 32), skyMat); s.frustumCulled = false; s.renderOrder = -10; scene.add(s);
+    // drawn after everything opaque (depth-tested at the far plane), so only visible sky pixels pay for the stars;
+    // still before the transparent rings, which blend over it
+    const s = new THREE.Mesh(new THREE.SphereGeometry(15000, 64, 32), skyMat); s.frustumCulled = false; s.renderOrder = 10; scene.add(s);
     return s;
   }
 
   /* ------------------------------ the giant (spec §5) ------------------------------ */
   const RING_GLSL = `
     float ringOp(float r){
-      float c = smoothstep(1.24, 1.26, r) * (1.0 - smoothstep(1.52, 1.53, r)) * 0.16;
-      float b = smoothstep(1.53, 1.56, r) * (1.0 - smoothstep(1.94, 1.95, r)) * (0.72 + 0.2 * smoothstep(1.6, 1.85, r));
-      float a = smoothstep(2.03, 2.035, r) * (1.0 - smoothstep(2.26, 2.27, r)) * 0.55;
+      float c = smoothstep(1.24, 1.26, r) * (1.0 - smoothstep(1.52, 1.53, r)) * 0.22;
+      float b = smoothstep(1.53, 1.56, r) * (1.0 - smoothstep(1.94, 1.95, r)) * (0.9 + 0.08 * smoothstep(1.6, 1.85, r));
+      float a = smoothstep(2.03, 2.035, r) * (1.0 - smoothstep(2.26, 2.27, r)) * 0.72;
       float encke = 1.0 - 0.92 * (1.0 - smoothstep(0.0, 0.006, abs(r - 2.212)));
-      float lets = 0.82 + 0.18 * sin(r * 480.0) * sin(r * 137.0);
+      float lets = 0.93 + 0.07 * sin(r * 480.0) * sin(r * 137.0);
       return (c + b + a * encke) * lets;
     }
     vec3 ringCol(float r){
@@ -559,7 +612,8 @@
     const pl = placePlanet(s);
     // sky gating (spec §2): bright stars, then the faint populations, then the band
     const sun = dirAzEl(TL.SUN.az, TL.SUN.el);
-    Object.assign(skyMat.uniforms, {}); skyMat.uniforms.uVisB.value = TL.visBright(s); skyMat.uniforms.uVisF.value = TL.visFaint(s); skyMat.uniforms.uVisMW.value = TL.visMW(s);
+    skyMat.uniforms.uVisB.value = TL.visBright(s); skyMat.uniforms.uVisF.value = TL.visFaint(s); skyMat.uniforms.uVisMW.value = TL.visMW(s);
+    skyMat.uniforms.uPx.value = 2 * Math.tan(C.fov * D2R / 2) / HT; skyMat.uniforms.uS.value = s;
     skyMat.uniforms.uDusk.value = dk; skyMat.uniforms.uLP.value = TL.lightPollution(s); skyMat.uniforms.uSun.value.copy(sun);
     // light: the last of the dusk from behind you; then the planet's own reflected light from the east
     const rise = U.smooth(-6, 10, TL.planetEl(s));
