@@ -70,7 +70,7 @@
   TL.PLANET = { radiusDeg: 8.6, ringIn: 1.24, ringOut: 2.27, az: 0.0, tilt: 0.38, open: 0.4 };
   TL.planetEl = kf([[0, -11.5], [TL.HOOK + 5, -6.0], [12, -3.0], [20, 6.5], [30, 13], [44, 19.5], [60, 25]]);   // degrees; the limb clears at zero
   TL.SUN = { az: 128, el: -4 };                    // set behind you and to the right: the planet rises gibbous, so both ring shadows show
-  TL.MOON = { az: 26, el: 31, radiusDeg: 0.26 };   // the real Moon, for scale
+  TL.MOON = { az: 15, el: 36, radiusDeg: 0.26 };   // the real Moon, for scale: up and right of the giant in the payoff framing
 
   /* ------------------------------ light, sky, city ------------------------------ */
   TL.dusk = kf([[0, 1], [TL.HOOK, 1], [9, 0.75], [20, 0.2], [32, 0]]);

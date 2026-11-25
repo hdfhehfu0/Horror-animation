@@ -248,7 +248,14 @@
     rings = new THREE.Mesh(new THREE.RingGeometry(P.ringIn, P.ringOut, 256, 1), ringMat); rings.frustumCulled = false; rings.renderOrder = -4;
     scene.add(globe, rings);
     // the real Moon, for scale
-    moonMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.MeshBasicMaterial({ color: '#e9e6dc', fog: false }));
+    // lit by the same sun as the giant (same phase), with its dark seas
+    moonMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), new THREE.ShaderMaterial({ fog: false, uniforms: { uL: { value: dirAzEl(TL.SUN.az, TL.SUN.el).normalize() } },
+      vertexShader: 'varying vec3 vN;\nvoid main(){\n vN = normalize(mat3(modelMatrix) * normal);\n gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n}',
+      fragmentShader: `uniform vec3 uL; varying vec3 vN; ${NOISE}
+        void main(){ float m = smoothstep(0.45, 0.7, fbm(vN * 2.2 + 3.0)); vec3 c = mix(vec3(0.92, 0.90, 0.85), vec3(0.55, 0.55, 0.56), m * 0.7);
+          gl_FragColor = vec4(c * pow(max(dot(vN, uL), 0.0), 0.8) * 1.05 + vec3(0.012, 0.014, 0.02), 1.0);
+          #include <colorspace_fragment>
+        }` }));
     const md = dirAzEl(TL.MOON.az, TL.MOON.el), MD = 12000; moonMesh.position.copy(md.multiplyScalar(MD)); moonMesh.scale.setScalar(MD * Math.tan(TL.MOON.radiusDeg * D2R)); moonMesh.renderOrder = -6;
     scene.add(moonMesh);
   }

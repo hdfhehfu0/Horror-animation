@@ -375,3 +375,27 @@ Part 4 of the galaxy series, made in the style of a second reference: a continuo
   The effects are ducked about 8 dB under the voices.
 
 Rebuild the audio: `python3 films/moon/prep_voices.py && python3 films/moon/mix.py`, then `node render.js --page moon.html`.
+
+# What if a rogue planet passed as close as the Moon? (eleventh film, first person)
+
+Made to the owner's `/mad-space` standard (`.claude/skills/mad-space/`) in the same first-person format as the Moon film, at native 60 fps. Open **`planet.html`**, or render it with `node render.js --page planet.html` (writes `out/rogue-planet.mp4` and `out/rogue-planet.srt`).
+
+**The story.**
+- A 2.6 s hook: the payoff sky, a flash-forward. Then dusk on a harbour-city rooftop: you lean on the parapet in gloves, your friend beside you. The countdown (**A ROGUE PLANET ARRIVES IN**, gold 5 4 3 2 1 0, one second per number) lands on zero as the planet's top and rings clear the sea.
+- A Saturn-sized world with no sun rises at the Moon's distance: more than 30 times wider than the Moon, its rings spanning about 75 full Moons. The real Moon hangs beside it for scale. Your friend points exactly at the rings' left ansa, and the camera follows his finger.
+- The pull: the building shakes and your hands grip the coping. You lean over the edge and watch the harbour drain to mud, the boats lying on their sides.
+- The payoff sky (the Milky Way's gold cloud, forked dust lane and rose wisps over the ringed giant), "Glory be to God." Sirens; the city's power fails; the sea itself rises into a mountain of water at the horizon.
+- Wide ending: the two men small on the roof as the wall of water climbs toward the planet.
+
+**How it's made.**
+- `prep_voices.py` places two male voices: ElevenLabs premade "Brian" for the friend (white italic serif captions) and the hero's take (#FFD54A captions). The hero says "Subhan Allah", captioned "Glory be to God."; **its Arabic pronunciation review is still pending**.
+- `core.js`: one scene clock, the hook mapping, camera keys (turns under 110°/s, push-ins on holds, the lean over the edge), the planet's rise, the sky gating, the drain, the surge, the shake and the pointing.
+- `world.js`, following `references/space_look_spec.md`:
+  - the star sky baked once into cube textures: five star populations with random^9 brightness, gaussian cores, colour only in the brightest, a patchy density mask, hero stars, and the Milky Way with its gold cloud, forked ragged dust lane, rose wisps and lavender-to-blue far end. The sky is gated per frame over a midnight-blue dome with dusk and warm city light pollution.
+  - the giant: banded globe with violet storm belt and oval, C/B/A rings with Cassini and Encke gaps, one sun direction, the ring shadow on the globe and the globe's shadow on the rings.
+  - the sea (glitter path, drawdown, surge wall), the sloped harbour floor, boats, piers, quay, lamps and the city;
+  - the rooftop (precast coping, gravel deck, tank), your IK arms and gloved hands, and both men in quilted coats, beanies, balaclavas and mirrored goggles (no eyes anywhere).
+- `film.js`: lamp glows (occluded by your own roof), shake smear, grade, grain, the V11 countdown and the captions at y ≈ 1401.
+- Sound (`mix.py`): **no music**. Recorded physical effects only: the rooftop, a rumble, the building groaning, the harbour draining, sirens, the surge roar, transformers failing, and breathing. Every line sits at least +12 dB over the effects (the script prints each margin). Final loudness is −16 LUFS (remux from `out/rogue-planet-score.wav` + `films/planet/audio/voice_sfx.wav`).
+
+Rebuild the audio: `python3 films/planet/prep_voices.py && python3 films/planet/mix.py`, then `node render.js --page planet.html`.
