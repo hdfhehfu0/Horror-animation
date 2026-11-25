@@ -38,6 +38,7 @@
       c.textAlign = 'center'; c.textBaseline = 'middle';
       const lines = wrap(c, b.text, 760), lh = 55, y0 = 1401 - (lines.length - 1) * lh / 2;
       c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 9; c.shadowOffsetY = 1.5;
+      c.lineJoin = 'round'; c.lineWidth = 6; c.strokeStyle = 'rgba(0,0,0,0.5)'; lines.forEach((ln, i) => c.strokeText(ln, 540, y0 + i * lh));
       c.fillStyle = hero ? '#FFD54A' : '#f2f2ef';
       lines.forEach((ln, i) => c.fillText(ln, 540, y0 + i * lh));
       c.restore();
@@ -73,18 +74,9 @@
     // promenade lamps: warm sodium pools, until the power fails
     const pw = TL.power(s);
     if (pw > 0.02) for (const L of World.lamps()) {
-      const P = World.project(L.x, L.y, L.z); if (!P.vis || P.x < -50 || P.x > W + 50 || P.y < -50 || P.y > HT + 50) continue;
+      const P = World.project(L.x, L.y, L.z); if (!P.vis || P.x < -50 || P.x > W + 50 || P.y < -50 || P.y > HT + 50 || World.occluded(L.x, L.y, L.z)) continue;
       const flick = s > 50.5 ? (U.hash(Math.floor(s * 14) + L.x) > 0.35 ? 1 : 0.25) : 1;
       glow(c, P.x, P.y, Math.min(120, 3600 / P.d), '255,196,120', 0.55 * pw * flick);
-    }
-    // the surge: spray hanging over the wall of water
-    const H = TL.surgeH(s);
-    if (H > 4) {
-      const fz = TL.surgeFront(s), Rr = U.mulberry32(17);
-      for (let i = 0; i < 26; i++) {
-        const x = (Rr() - 0.5) * 2400, P = World.project(x, H * (1.05 + 0.25 * Rr()), fz + 40); if (!P.vis) continue;
-        glow(c, P.x, P.y, Math.min(260, 60000 / P.d), '170,182,200', 0.12 * U.clamp((H - 4) / 30));
-      }
     }
     // the pull shakes everything: a small vertical smear
     const sh = TL.shake(s);
