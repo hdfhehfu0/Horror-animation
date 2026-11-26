@@ -399,3 +399,27 @@ Made to the owner's `/mad-space` standard (`.claude/skills/mad-space/`) in the s
 - Sound (`mix.py`): **no music**. Recorded physical effects only: the rooftop, a rumble, the building groaning, the harbour draining, sirens, the surge roar, transformers failing, and breathing. Every line sits at least +12 dB over the effects (the script prints each margin). Final loudness is −16 LUFS (remux from `out/rogue-planet-score.wav` + `films/planet/audio/voice_sfx.wav`).
 
 Rebuild the audio: `python3 films/planet/prep_voices.py && python3 films/planet/mix.py`, then `node render.js --page planet.html`.
+
+# What if a solar storm like 1859 hit tonight? (twelfth film, first person)
+
+Made to the owner's `/mad-space` standard in the same first-person format as the rogue planet film, at native 60 fps. Open **`storm.html`**, or render it with `node render.js --page storm.html` (writes `out/solar-storm.mp4` and `out/solar-storm.srt`).
+
+**The story.**
+- A 2.6 s hook: the payoff sky, a flash-forward. Then a normal night on the same rooftop, looking north over a lit city. The countdown (**THE STORM HITS IN**, gold 5 4 3 2 1 0) lands on zero as a red glow rises in the north.
+- Your friend points at it: seventeen hours ago the Sun threw billions of tons of plasma at us. The aurora spreads overhead (green curtains with a pink fringe and a high red glow) and moves.
+- A transformer blows in the square below you, and you grip the parapet. Then, one after another, transformers blow across the city, and each takes its district dark: lamps and windows flicker out block by block, at the speed the failure spreads.
+- Your phone: *No Service*. With every light out, the full Milky Way appears behind the aurora as the oval sweeps over you.
+- Wide ending: the two men small on the roof above a black city, under the storm.
+
+**Facts used.** The 1859 Carrington storm's plasma took about 17.6 hours to arrive; its auroras were seen as far south as Cuba; Rocky Mountain gold miners got up and made breakfast thinking it was morning; telegraph wires sparked and set paper on fire. Long power lines carry geomagnetically induced currents that can burn out transformers. A Carrington-class eruption in July 2012 crossed Earth's orbit about nine days after Earth had passed.
+
+**How it's made.**
+- `prep_voices.py` places the friend (ElevenLabs premade "Brian", white captions; the take was checked word for word with Scribe) and the hero ("Lip", #FFD54A captions).
+- `core.js`: one scene clock, the camera keys, the aurora's strength, colour and southward sweep, the eight transformer failures, and `cutTime(x, z)`: when each part of the city goes dark.
+- `world.js`:
+  - the sky: the same crisp per-pixel stars and baked Milky Way as the rogue planet film, plus the aurora. Vertical east-west sheets with folds, a sharp green lower edge, a pink fringe, rays along the field lines, edge-on brightening, and a broad high red glow, sweeping south over you. Each transformer flash lights the low sky toward it.
+  - the city: merged blocks with shader windows, an open square below you, and street lamps drawn as depth-tested points. Each window and lamp reads its block's cut time and flickers out. The transformer arcs are drawn as points, with a light on the buildings around them.
+  - you and your friend: as in the rogue planet film, plus your phone, held in your right hand, with a live screen.
+- Sound (`mix.py`): **no music**. The city at night thins out district by district. Power lines buzz, and each transformer's bang arrives late, at the speed of sound. Then the blackout: dogs, horns, distant sirens, and your breathing. Every line sits at least +12 dB over the effects. Final loudness is −16 LUFS.
+
+Rebuild the audio: `python3 films/storm/prep_voices.py && python3 films/storm/mix.py`, then `node render.js --page storm.html`.
