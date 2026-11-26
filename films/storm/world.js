@@ -160,7 +160,7 @@
         vec3 nrm = normalize(vec3(-dzdx, 0.0, 1.0));
         float lane = 1.0 / max(abs(dot(d, nrm)), 0.14);
         float sg = (i == 0 ? 1.0 : i == 1 ? 0.8 : i == 2 ? 0.65 : i == 3 ? 0.5 : 0.4);
-        vec3 em = vec3(0.22, 1.0, 0.42) * green * uAurG + vec3(0.85, 0.25, 0.75) * pink * uAurG * 0.55 + vec3(1.0, 0.13, 0.17) * red * uAurR * 0.55;
+        vec3 em = vec3(0.22, 1.0, 0.42) * green * uAurG * 1.9 + vec3(0.9, 0.25, 0.75) * pink * uAurG * 0.9 + vec3(1.0, 0.13, 0.17) * red * uAurR * 0.42;
         acc += em * rays * patchy * ends * lane * sg * 0.09;
       }
       // the broad, high red glow over the north (and later overhead)
@@ -168,10 +168,10 @@
       for (int k = 0; k < 4; k++) {
         float h = 210.0 + 60.0 * float(k), t = h / max(d.y, 0.04);
         vec2 P = d.xz * t;
-        float wgt = smoothstep(front + 220.0, front - 80.0, P.y) * smoothstep(front - 2200.0, front - 900.0, P.y);
-        float m = 0.45 + 0.55 * n3(vec3(P * 0.0035, uS * 0.04 + float(k)));
+        float wgt = smoothstep(front - 60.0, front - 240.0, P.y) * smoothstep(front - 2300.0, front - 1100.0, P.y);
+        float m = 0.25 + 0.75 * smoothstep(0.25, 0.8, n3(vec3(P * 0.0035, uS * 0.04 + float(k))));
         float prof = exp(-pow((h - 290.0) / 120.0, 2.0));
-        acc += vec3(1.0, 0.12, 0.16) * uAurR * wgt * m * prof * (60.0 / max(d.y, 0.06)) * 0.00042;
+        acc += vec3(1.0, 0.12, 0.16) * uAurR * wgt * m * prof * (60.0 / max(d.y, 0.06)) * 0.0003;
       }
       return acc * uAur;
     }
@@ -309,7 +309,7 @@
     g2.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3)); g2.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3));
     g2.setAttribute('color', new THREE.Float32BufferAttribute(this.c, 3)); g2.setAttribute('aW', new THREE.Float32BufferAttribute(this.w, 3)); return g2;
   };
-  const STONE = ['#b9b0a0', '#a9a49c', '#c4bcab', '#8f8b86', '#9c8f7e', '#b0a796', '#7f848a', '#a69a88', '#6f7378'];
+  const STONE = ['#8d8578', '#7f7a73', '#958d7f', '#6c6965', '#776c5f', '#857d70', '#5f6469', '#7d7366', '#56595e'];
   const AVE = 92, STREET = 74;                 // block pitch in x (avenues run north) and in z (cross streets)
   function city() {
     const b = new Builder();
@@ -319,9 +319,10 @@
     for (let bz = -24; bz > -1900; bz -= STREET) for (let bx = -1700; bx < 1700; bx += AVE) {
       const x0 = bx + 10, x1 = bx + AVE - 10, z0 = bz - 2 - 8, z1 = bz - STREET + 8;   // the block, inside its streets
       const dist = Math.hypot((x0 + x1) / 2, (z0 + z1) / 2), n = 1 + (rnd() * 3 | 0);
+      if (z0 > -175 && Math.abs((x0 + x1) / 2) < 330) continue;                         // the square below you
       for (let k = 0; k < n; k++) {
         const w = (x1 - x0) / n, cx = x0 + w * (k + 0.5), d = (z0 - z1) * R(0.7, 0.95);
-        let h = dist < 260 ? R(12, 34) : dist < 700 ? R(18, 62) : R(24, 90);
+        let h = dist < 360 ? R(10, 26) : dist < 700 ? R(18, 60) : R(24, 90);
         if (rnd() < (dist < 300 ? 0.03 : 0.12)) h += R(40, dist > 600 ? 190 : 70);
         b.box(cx, 0, (z0 + z1) / 2, w * R(0.82, 0.96), h, d, STONE[(rnd() * STONE.length) | 0]);
       }
@@ -329,10 +330,13 @@
     const m = new THREE.Mesh(b.geo(), cityMat()); scene.add(m);
     // the ground: asphalt and pavements
     scene.add(slab(-4000, -0.2, -4000, 4000, 0, 60, lam('#2c2d30'), { cast: false }));
+    scene.add(slab(-320, 0, -170, 320, 0.15, -24, lam('#3b3a36'), { cast: false }));                 // the square's paving
+    for (let i = 0; i < 90; i++) { const x = R(-300, 300), z = R(-160, -34), hgt = R(5, 9); scene.add(mesh(new THREE.CylinderGeometry(0.18, 0.25, hgt * 0.45, 6), lam('#2a231d'), x, hgt * 0.22, z, { cast: false })); scene.add(mesh(new THREE.IcosahedronGeometry(R(2.2, 3.6), 1), lam(['#23301f', '#2b3a25', '#1f2a1c'][i % 3]), x, hgt * 0.6, z, { cast: false })); }   // trees
     // street lamps (drawn as depth-tested glowing points; each goes out with its block)
     const P = [], C = [];
     const add = (x, z) => { P.push(x, 5.2, z); C.push(TL.cutTime(x, z), rnd()); };
     for (let x = -60; x <= 60; x += 24) add(x, -19);                                   // your own street
+    for (let z = -40; z > -170; z -= 26) for (let x = -300; x <= 300; x += 60) add(x + (z % 52 ? 0 : 30), z);   // the square's paths
     for (let bx = -1700; bx < 1700; bx += AVE) for (let z = -30; z > -1900; z -= 32) { add(bx + 3, z); add(bx - 3, z - 16); }
     for (let bz = -24; bz > -1900; bz -= STREET) for (let x = -1700; x < 1700; x += 34) { add(x, bz - 3); add(x + 17, bz - 13); }
     const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g2.setAttribute('aCut', new THREE.Float32BufferAttribute(C, 2));
@@ -374,7 +378,7 @@
         }`,
     });
     arcs = new THREE.Points(pg, arcMat); arcs.frustumCulled = false; arcs.renderOrder = 6; scene.add(arcs);
-    popLight = new THREE.PointLight('#a9c8ff', 0, 900, 1.2); scene.add(popLight);
+    popLight = new THREE.PointLight('#a9c8ff', 0, 420, 1.4); scene.add(popLight);
   }
   // how hard each transformer is arcing at scene time s (0 = not)
   function popW(p, s) {
@@ -409,7 +413,9 @@
     scr.position.z = 0.0047; phone.add(body, scr);
     const pl = new THREE.PointLight('#cfe0ff', 0.25, 0.7, 2); pl.position.set(0, 0, 0.05); phone.add(pl);
     // your right hand round it: palm behind, thumb on the left edge, fingers curled round the right edge
-    phoneHand = hand(0.95); phoneHand.scale.x = -1; phoneHand.rotation.set(Math.PI / 2 + 0.15, 0, -Math.PI / 2 + 0.1); phoneHand.position.set(0.012, -0.03, -0.03); phone.add(phoneHand);
+    phoneHand = hand(1.15);
+    { const M = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(1, 0, 0)); phoneHand.quaternion.setFromRotationMatrix(M); }
+    phoneHand.position.set(0.028, -0.04, -0.022); phone.add(phoneHand);
     phone.visible = false;
   }
 
@@ -555,7 +561,7 @@
     camera = new THREE.PerspectiveCamera(70, W / HT, 0.05, 40000); camera.rotation.order = 'YXZ'; scene.add(camera);
     hemi = new THREE.HemisphereLight('#4a5470', '#3a2a22', 0.6); scene.add(hemi);
     auroraLight = new THREE.DirectionalLight('#7dffb0', 0); scene.add(auroraLight, auroraLight.target);
-    fill = new THREE.DirectionalLight('#a9b8dc', 0.7); scene.add(fill, fill.target);
+    fill = new THREE.PointLight('#a9b8dc', 2.2, 7, 2); scene.add(fill);
     bakeSky(); makeDome(); city(); roof(); people(); makePhone();
   }
 
@@ -581,15 +587,15 @@
       if (w > best) { best = w; bestP = p; }
     });
     aw.needsUpdate = true;
-    if (bestP) { popLight.position.set(bestP.x, bestP.y + 6, bestP.z); popLight.intensity = 9000 * best; } else popLight.intensity = 0;
+    if (bestP) { popLight.position.set(bestP.x, bestP.y + 6, bestP.z); popLight.intensity = 2600 * best; } else popLight.intensity = 0;
     // light: the aurora from the north (green, red-tinged), the sky, the city's glow from below while it lasts
     const ac = tmpC.setRGB(0.25 + 0.75 * aR * (1 - 0.6 * aG), 0.35 + 0.65 * aG, 0.45 + 0.1 * aG);
-    auroraLight.color.copy(ac); auroraLight.intensity = 0.9 * aur;
+    auroraLight.color.copy(ac); auroraLight.intensity = 0.32 * aur;
     auroraLight.position.set(C.x, C.y + 160, C.z - 220); auroraLight.target.position.set(C.x, C.y, C.z);
     hemi.color.set('#46506c').lerp(tmpC.setRGB(0.32, 0.62, 0.48), 0.45 * aur * aG); hemi.groundColor.set('#22201f').lerp(tmpC.set('#6a4a32'), 0.8 * lit);
-    hemi.intensity = 0.45 + 0.4 * aur;
+    hemi.intensity = 0.22 + 0.22 * aur;
     const fwd = new THREE.Vector3(-Math.sin(C.yaw) * Math.cos(C.pitch), Math.sin(C.pitch), -Math.cos(C.yaw) * Math.cos(C.pitch));
-    fill.position.set(C.x, C.y + 2, C.z).addScaledVector(fwd, -3); fill.target.position.set(C.x, C.y, C.z).addScaledVector(fwd, 3);
+    fill.position.set(C.x, C.y + 0.6, C.z).addScaledVector(fwd, -0.8); fill.intensity = C.wide ? 0 : 2.2;
     fog.color.set('#1a2030').lerp(tmpC.set('#3a2a24'), 0.5 * lit);
     // the flag
     const P = flag.geometry.attributes.position, b0 = flag.userData.base;
@@ -600,7 +606,7 @@
     handsGrp.visible = !C.wide; setPersonVisible(heroFig, C.wide); heroFig.updateMatrixWorld(true);
     phone.visible = ph > 0.01 && !C.wide;
     if (phone.visible) {
-      phone.position.set(0.075 - 0.02 * ph, -0.62 + 0.43 * U.easeOut(ph), -0.36); phone.rotation.set(0.32, -0.12, 0.05);
+      phone.position.set(0.07 - 0.025 * ph, -0.62 + 0.48 * U.easeOut(ph), -0.36); phone.rotation.set(0.3, -0.12, 0.05);
       const ns = TL.noSignal(s); if (ns !== lastNoSignal) { phoneScreen(ns); lastNoSignal = ns; }
       phone.updateMatrixWorld(true);
     }
