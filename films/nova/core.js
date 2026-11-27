@@ -22,7 +22,7 @@
   /* ------------------------------ captions + countdown ------------------------------ */
   TL.blocks = LINES.map(([a, b, voice, text], i) => {
     const next = i + 1 < LINES.length ? LINES[i + 1][0] : DUR;
-    return { kind: voice, text, t0: +(a - 0.08).toFixed(3), t1: +Math.min(b + 0.6, next - 0.1, a < TL.HOOK ? TL.HOOK - 0.02 : 1e9).toFixed(3) };
+    return { kind: voice, text, t0: +Math.max(0, a - 0.08).toFixed(3), t1: +Math.min(b + 0.6, next - 0.1, a < TL.HOOK ? TL.HOOK - 0.02 : 1e9).toFixed(3) };
   });
   TL.captions = [];
   TL.blocks.forEach((b) => { TL.captions.push([b.t0, b.text]); TL.captions.push([b.t1, '']); });
