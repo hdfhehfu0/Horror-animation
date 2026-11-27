@@ -27,7 +27,7 @@
   const skyScene = new THREE.Scene(), overScene = new THREE.Scene();   // the sky after the scene; then what is see-through in front of it
   const fireMats = [], fireCards = [], glowMats = [], snowU = { uNova: { value: 0 }, uCamQ: { value: new THREE.Vector3() } };
   let emberMat, logMat, coalMat, shaftMat, steamMat, smokeMat, steam, smoke, lampFlame;
-  let door, heroMug, friendMug, friend, heroFig, friendHands = [], heroHands = [], povArms = [], povLegs;
+  let door, heroMug, friendMug, friend, heroFig, heroShadow, friendHands = [], heroHands = [], povArms = [], povLegs;
   const treeMeshes = [];
   let skyInside = false;
 
@@ -766,6 +766,14 @@
     for (let i = 0; i < 2; i++) { const fore = limb(sleeve, 0.052, 0.043), up = limb(sleeve, 0.062, 0.056), el = mesh(new THREE.SphereGeometry(0.054, 12, 8), sleeve); scene.add(el); povArms.push({ fore, up, el }); }
     povLegs = new THREE.Group(); scene.add(povLegs);
     for (const s of [-1, 1]) { povLegs.add(mesh(new THREE.CapsuleGeometry(0.075, 0.6, 4, 10), std('#2f2a26', 0.9, textures().fine), s * 0.12, -0.95, 0.06)); povLegs.add(mesh(box(0.12, 0.11, 0.3), std('#231b15', 0.6), s * 0.12, -1.6, -0.05)); }
+    // your own shadow outdoors: your body, which the camera never draws (no colour, no depth) but the star's shadow sees;
+    // without it the snow would show only your legs and a floating forearm
+    const ghost = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+    const ud = heroFig.userData; heroFig.userData = {}; heroShadow = heroFig.clone(); heroFig.userData = ud;
+    heroShadow.children.filter((c) => c.position.y < 0.6).forEach((c) => heroShadow.remove(c));          // the legs: povLegs cast those
+    heroShadow.traverse((o) => { if (o.isMesh) { o.material = ghost; o.receiveShadow = false; } });
+    scene.add(heroShadow);
+    povArms.forEach((a) => { a.up.material = ghost; a.up.receiveShadow = false; });
     heroMug = mugMesh('#d8cbb0'); scene.add(heroMug);
     // steam over your tea: thin curling wisps, never round puffs
     steamMat = new THREE.ShaderMaterial({
@@ -831,7 +839,9 @@
     h.quaternion.copy(quatBasis(X, Y, Z)); h.position.copy(P);
   }
   let shadowMode = '';
-  function setShadowBox(center, half, far) {
+  const LOOKC = (() => { const h = new THREE.Vector3(-SDIR.x, 0, -SDIR.z).normalize(), c = new THREE.Vector3(5.0, 0, -8.5).addScaledVector(h, 2.0); c.y = groundY(c.x, c.z); return c; })();
+  function setShadowBox(center, half, far, size = 2048) {
+    if (starLight.shadow.mapSize.x !== size) { starLight.shadow.mapSize.set(size, size); if (starLight.shadow.map) { starLight.shadow.map.dispose(); starLight.shadow.map = null; } }
     starLight.position.copy(center).addScaledVector(SDIR, far * 0.5); starLight.target.position.copy(center); starLight.target.updateMatrixWorld();
     const c = starLight.shadow.camera; c.left = -half; c.right = half; c.top = half; c.bottom = -half; c.near = 0.5; c.far = far; c.updateProjectionMatrix();
   }
@@ -846,10 +856,14 @@
     // the star's light: shadows sized to where you are (the room, the slope, or the wide view)
     starLight.intensity = 2.3 * nova;
     const mode = C.wide ? 'wide' : inside ? 'in' : 'out';
-    if (mode !== shadowMode) {
-      shadowMode = mode;
-      if (mode === 'in') setShadowBox(V3(1.6, 1.0, -1.0), 4.6, 40);
-      else if (mode === 'out') setShadowBox(V3(9, 0, -18), 30, 160);
+    // looking back at the cabin, your two shadows lie right in front of you: a tight, fine box round them, switched while
+    // the turn shows only shadowless snow, so nothing else visibly changes
+    const smode = mode === 'out' && s > 40.7 && s < 44.4 ? 'look' : mode;
+    if (smode !== shadowMode) {
+      shadowMode = smode;
+      if (smode === 'in') setShadowBox(V3(1.6, 1.0, -1.0), 4.6, 40);
+      else if (smode === 'out') setShadowBox(V3(9, 0, -18), 30, 160);
+      else if (smode === 'look') setShadowBox(LOOKC, 7, 60, 4096);
       else setShadowBox(V3(4, 0, -8), 18, 120);
     }
     fireKey.castShadow = inside;
@@ -880,7 +894,9 @@
     const fwd = V3(0, 0, -1).applyQuaternion(bodyQ), right = V3(1, 0, 0).applyQuaternion(bodyQ), up = V3(0, 1, 0);
     const walkBob = TL.pos(s).moving * 0.01 * Math.sin(TL.pos(s).walked / 0.72 * Math.PI);
     const showPov = !C.wide;
-    setPersonVisible(heroFig, C.wide); povLegs.visible = showPov; povArms.forEach((a) => { a.up.visible = false; a.fore.visible = a.el.visible = showPov; });
+    setPersonVisible(heroFig, C.wide); povLegs.visible = showPov; povArms.forEach((a) => { a.up.visible = showPov && !inside; a.fore.visible = a.el.visible = showPov; });
+    heroShadow.visible = showPov && !inside;
+    heroShadow.position.set(C.x, C.y - 1.81, C.z); heroShadow.rotation.set(0, C.yaw, 0);
     povLegs.position.set(C.x, C.y, C.z); povLegs.quaternion.copy(bodyQ); if (s < 12.0) povLegs.visible = false;
     // the mug: in both hands, then carried to the sill
     const held = bodyAt(0.03, -0.3 + walkBob, -0.46), sill = V3(2.42, 0.8, -2.91), mk = TL.mugSet(s);
