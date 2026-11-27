@@ -23,10 +23,13 @@
 
   let renderer, scene, camera, canvas, fog;
   let hemi, starLight, fireKey, fireFill, fireLow, lampLight, outWarm, northWarm, doorLamp, doorLight;
-  let skyMat, cubes = {}, MW;
+  let skyMat, cubes = {}, MW, dome;
+  const skyScene = new THREE.Scene(), overScene = new THREE.Scene();   // the sky after the scene; then what is see-through in front of it
   const fireMats = [], fireCards = [], glowMats = [], snowU = { uNova: { value: 0 }, uCamQ: { value: new THREE.Vector3() } };
   let emberMat, logMat, coalMat, shaftMat, steamMat, smokeMat, steam, smoke, lampFlame;
   let door, heroMug, friendMug, friend, heroFig, friendHands = [], heroHands = [], povArms = [], povLegs;
+  const treeMeshes = [];
+  let skyInside = false;
 
   /* ------------------------------ helpers ------------------------------ */
   function mesh(geo, mat, x = 0, y = 0, z = 0, o = {}) {
@@ -207,7 +210,7 @@
             float tw = 0.12 + 0.4 * (1.0 - smoothstep(0.04, 0.5, d.y));
             float ori = 1.0 - 0.6 * smoothstep(0.966, 0.991, dot(d, uOri));              // within ~15 deg of Orion's belt
             vec3 st = starLayer(d, 70.0, 0.10, 6.5, 1.1, 0.0, tw, 1.0) * uVisB * ori;
-            if (uVisF > 0.003) {
+            if (uVisF > 0.003 && m.r + m.g > 0.02) {
               vec3 f = starLayer(d, 190.0, 0.12, 2.8, 0.9, 31.0, tw * 0.6, 0.0) * m.r * ori;
               f += starLayer(d, 420.0, 0.14, 1.3, 0.85, 77.0, 0.0, 0.0) * m.r;
               f += starLayer(d, 640.0, 0.12, 0.9, 0.8, 151.0, 0.0, 0.0) * m.r;
@@ -249,7 +252,7 @@
           #include <colorspace_fragment>
         }`,
     });
-    const s = new THREE.Mesh(new THREE.SphereGeometry(30000, 64, 32), skyMat); s.frustumCulled = false; s.renderOrder = 10; scene.add(s);
+    dome = new THREE.Mesh(new THREE.SphereGeometry(30000, 64, 32), skyMat); dome.frustumCulled = false; skyScene.add(dome);
   }
 
   /* ------------------------------ textures: wood, stone, wool, snow ------------------------------ */
@@ -392,10 +395,10 @@
     const r = U.mulberry32(seed), pos = [], nor = [], col = [];
     const add = (geo, tint) => { const g2 = geo.toNonIndexed(), P = g2.attributes.position, N = g2.attributes.normal; for (let i = 0; i < P.count; i++) { pos.push(P.getX(i), P.getY(i), P.getZ(i)); nor.push(N.getX(i), N.getY(i), N.getZ(i)); col.push(...tint(P.getY(i), N.getY(i), i)); } };
     add(new THREE.CylinderGeometry(0.035, 0.06, 0.3, 6).translate(0, 0.15, 0), () => [0.16, 0.11, 0.08]);
-    const tiers = 9;
+    const tiers = 7;
     for (let k = 0; k < tiers; k++) {
-      const y0 = 0.12 + k * 0.094, hgt = 0.24 - k * 0.008, rad = 0.31 - k * 0.03;
-      const cone = new THREE.ConeGeometry(rad, hgt, 14, 2); cone.rotateY(r() * 6.28); cone.translate(0, y0 + hgt / 2, 0);
+      const y0 = 0.12 + k * 0.12, hgt = 0.27 - k * 0.01, rad = 0.31 - k * 0.038;
+      const cone = new THREE.ConeGeometry(rad, hgt, 10, 1); cone.rotateY(r() * 6.28); cone.translate(0, y0 + hgt / 2, 0);
       const P = cone.attributes.position;
       for (let i = 0; i < P.count; i++) {
         const y = P.getY(i), x = P.getX(i), z = P.getZ(i), rr = Math.hypot(x, z);
@@ -429,7 +432,7 @@
     const groups = [[], [], []]; T.forEach((t, i) => groups[i % 3].push(t));
     const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), V = new THREE.Vector3();
     groups.forEach((G, gi) => {
-      const im = new THREE.InstancedMesh(geos[gi], mat, G.length); im.castShadow = true; im.receiveShadow = true;
+      const im = new THREE.InstancedMesh(geos[gi], mat, G.length); im.castShadow = true; im.receiveShadow = true; treeMeshes.push(im);
       G.forEach(([x, z, h], i) => { Q.setFromAxisAngle(UPY, rnd() * 6.28); S.set(h * R(0.85, 1.1), h, h * R(0.85, 1.1)); V.set(x, groundY(x, z) - 0.15, z); M.compose(V, Q, S); im.setMatrixAt(i, M); });
       scene.add(im);
     });
@@ -485,7 +488,7 @@
       const rf = mesh(box(9.6, 0.18, len + 0.1), roofM, 0, -0.09, s * (len / 2)); r.add(rf);
       const sn = mesh(box(9.7, 0.24, len + 0.12), snowR, 0, 0.11, s * (len / 2)); r.add(sn);
     }
-    for (let x = -4.6; x < 4.6; x += R(0.12, 0.3)) { const L = R(0.06, 0.38); scene.add(mesh(new THREE.ConeGeometry(0.018, L, 5), std('#dfe9f7', 0.15, null, { transparent: true, opacity: 0.85 }), x, 2.6 - L / 2, -3.55, { rx: Math.PI, cast: false })); }
+    for (let x = -4.6; x < 4.6; x += R(0.12, 0.3)) { const L = R(0.06, 0.38); scene.add(mesh(new THREE.ConeGeometry(0.018, L, 5), std('#dfe9f7', 0.15), x, 2.6 - L / 2, -3.55, { rx: Math.PI, cast: false })); }
     // the chimney: stone, outside the south wall, through the eave and up past the ridge
     const stoneM = std('#ffffff', 0.92, T.stone);
     scene.add(worldUV(slab(-0.35, GROUND, -3.95, 1.15, 5.7, -3.22, stoneM))); scene.add(slab(-0.45, 5.7, -4.05, 1.25, 5.85, -3.12, std('#4d4842', 0.9)));
@@ -532,8 +535,8 @@
     scene.add(slab(1.5, 0.74, -3.02, 3.0, 0.8, -2.8, fr));                                                // sill
     for (const [x0, x1, y0, y1] of [[1.56, 1.64, 0.8, 2.3], [2.86, 2.94, 0.8, 2.3], [1.56, 2.94, 2.26, 2.34], [1.56, 2.94, 0.8, 0.86], [2.23, 2.27, 0.8, 2.3], [1.6, 2.9, 1.3, 1.335], [1.6, 2.9, 1.8, 1.835]]) scene.add(slab(x0, y0, -3.14, x1, y1, -3.07, fr));
     for (const [x0, x1, y0, y1] of [[1.5, 1.6, 0.74, 2.42], [2.9, 3.0, 0.74, 2.42], [1.5, 3.0, 2.3, 2.42]]) scene.add(slab(x0, y0, -3.02, x1, y1, -2.97, fr));   // trim
-    const glass = mesh(new THREE.PlaneGeometry(1.3, 1.5), new THREE.MeshStandardMaterial({ color: '#9fb4c8', roughness: 0.05, metalness: 0.0, transparent: true, opacity: 0.07, depthWrite: false }), 2.25, 1.55, -3.105, { cast: false }); scene.add(glass);
-    const frost = mesh(new THREE.PlaneGeometry(1.3, 1.5), new THREE.MeshStandardMaterial({ map: T.frost, transparent: true, depthWrite: false, roughness: 0.9, color: '#ffffff' }), 2.25, 1.55, -3.1, { cast: false, recv: false }); scene.add(frost);
+    const glass = mesh(new THREE.PlaneGeometry(1.3, 1.5), new THREE.MeshBasicMaterial({ color: '#c9b49a', transparent: true, opacity: 0.05, depthWrite: false, side: THREE.DoubleSide }), 2.25, 1.55, -3.105, { cast: false, recv: false }); overScene.add(glass);
+    const frost = mesh(new THREE.PlaneGeometry(1.3, 1.5), new THREE.MeshBasicMaterial({ map: T.frost, transparent: true, depthWrite: false, color: '#b9b3c4', side: THREE.DoubleSide }), 2.25, 1.55, -3.1, { cast: false, recv: false }); overScene.add(frost);
     { const cg = new THREE.PlaneGeometry(0.34, 1.9, 10, 1), P = cg.attributes.position; for (let i = 0; i < P.count; i++) P.setZ(i, 0.03 * Math.sin(P.getX(i) * 40)); cg.computeVertexNormals(); scene.add(mesh(cg, std('#ffffff', 0.95, T.tartan, { side: THREE.DoubleSide }), 1.33, 1.52, -2.93)); }
     // the door: planks, iron straps and latch; it swings inward on its hinge at x 3.95
     door = new THREE.Group(); door.position.set(3.95, 0, -3.1); scene.add(door);
@@ -650,7 +653,7 @@
     const gl2 = mesh(new THREE.PlaneGeometry(0.8, 0.75), gm, 0.4, 0.48, -2.93, { cast: false, recv: false }); gl2.renderOrder = 19; scene.add(gl2);
     // the fire's light: a key that throws shadows into the room, a fill, and a low warm light inside the firebox
     fireKey = new THREE.SpotLight('#ff9a4a', 9, 14, 1.3, 0.85, 1.5); fireKey.position.set(0.4, 0.42, -2.5); fireKey.target.position.set(0.3, 0.6, 2.0);
-    fireKey.castShadow = true; fireKey.shadow.mapSize.set(1024, 1024); fireKey.shadow.bias = -0.0015; fireKey.shadow.radius = 4; fireKey.shadow.camera.near = 0.1; fireKey.shadow.camera.far = 12;
+    fireKey.castShadow = true; fireKey.shadow.mapSize.set(512, 512); fireKey.shadow.bias = -0.0015; fireKey.shadow.radius = 4; fireKey.shadow.camera.near = 0.1; fireKey.shadow.camera.far = 12;
     scene.add(fireKey, fireKey.target);
     fireFill = new THREE.PointLight('#ff8c40', 2.2, 7, 1.6); fireFill.position.set(0.4, 0.6, -2.1); scene.add(fireFill);
     fireLow = new THREE.PointLight('#ff7a30', 1.6, 1.6, 1.4); fireLow.position.set(0.4, 0.32, -2.7); scene.add(fireLow);
@@ -798,7 +801,7 @@
           gl_FragColor = vec4(c, s * 0.55);
         }`,
     });
-    smoke = mesh(new THREE.PlaneGeometry(4.5, 7), smokeMat, 0.4 + 1.6, 5.9 + 3.5, -3.58, { cast: false, recv: false }); smoke.renderOrder = 23; scene.add(smoke);
+    smoke = mesh(new THREE.PlaneGeometry(4.5, 7), smokeMat, 0.4 + 1.6, 5.9 + 3.5, -3.58, { cast: false, recv: false }); smoke.renderOrder = 23; overScene.add(smoke);
   }
 
   /* ------------------------------ build ------------------------------ */
@@ -808,7 +811,7 @@
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(1); renderer.setSize(W, HT, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0; renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
     scene = new THREE.Scene(); fog = new THREE.Fog('#0b1424', 260, 5200); scene.fog = fog;
     camera = new THREE.PerspectiveCamera(70, W / HT, 0.03, 60000); camera.rotation.order = 'YXZ'; scene.add(camera);
     hemi = new THREE.HemisphereLight('#3a4a6e', '#1a1c24', 0.32); scene.add(hemi);
@@ -834,6 +837,7 @@
   }
   function update(t) {
     const s = TL.sceneT(t), C = TL.cam(t), nova = TL.nova(s), inside = !C.wide && TL.inside(s);
+    skyInside = inside && C.z > -3.0;
     camera.position.set(C.x, C.y, C.z); camera.rotation.set(C.pitch, C.yaw, C.roll); camera.fov = C.fov; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     // the sky
     const U2 = skyMat.uniforms;
@@ -849,6 +853,9 @@
       else setShadowBox(V3(4, 0, -8), 18, 120);
     }
     fireKey.castShadow = inside;
+    treeMeshes.forEach((m) => { m.castShadow = !inside; });
+    fireLow.visible = lampLight.visible = doorLight.visible = inside; fireKey.visible = fireFill.visible = !C.wide;
+    outWarm.visible = !inside; northWarm.visible = C.wide;
     hemi.intensity = (inside ? 0.16 : 0.34) + 0.16 * nova; hemi.color.set('#34446a').lerp(new THREE.Color('#7d93c8'), 0.5 * nova);
     snowU.uNova.value = nova; snowU.uCamQ.value.set(Math.floor(C.x * 6), Math.floor(C.y * 6), Math.floor((C.yaw + C.pitch) * 40));
     // the fire: flicker on every light and flame, from one noise
@@ -963,7 +970,33 @@
   }
 
   function prepare(t) { init(); update(t); }
-  function draw() { renderer.render(scene, camera); return canvas; }
+  // the openings you can see the sky through from inside: the window, and the doorway once it is open
+  const OPEN = [[1.6, 0.8, 2.9, 2.3], [3.15, 0.0, 3.95, 2.1]];
+  const pv = new THREE.Vector3();
+  function skyRect() {
+    if (!skyInside) return null;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, any = false;
+    for (const [a, b, c, d] of OPEN) for (const [x, y] of [[a, b], [c, b], [a, d], [c, d]]) for (const z of [-3.0, -3.25]) {
+      pv.set(x, y, z).applyMatrix4(camera.matrixWorldInverse);
+      if (pv.z > -0.02) return null;                      // a corner behind you: draw the whole sky
+      pv.applyMatrix4(camera.projectionMatrix); any = true;
+      const sx = (pv.x * 0.5 + 0.5) * W, sy = (pv.y * 0.5 + 0.5) * HT;
+      x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+    }
+    if (!any) return null;
+    x0 = Math.max(0, Math.floor(x0) - 2); y0 = Math.max(0, Math.floor(y0) - 2); x1 = Math.min(W, Math.ceil(x1) + 2); y1 = Math.min(HT, Math.ceil(y1) + 2);
+    return x1 > x0 && y1 > y0 ? [x0, y0, x1 - x0, y1 - y0] : [0, 0, 0, 0];
+  }
+  function draw() {
+    renderer.autoClear = true; renderer.render(scene, camera);
+    const r = skyRect();
+    renderer.autoClear = false;
+    if (r) { renderer.setScissorTest(true); renderer.setScissor(r[0], r[1], r[2], r[3]); }
+    if (!r || (r[2] > 0 && r[3] > 0)) renderer.render(skyScene, camera);
+    renderer.setScissorTest(false);
+    renderer.render(overScene, camera); renderer.autoClear = true;
+    return canvas;
+  }
   function render(t) { prepare(t); return draw(); }
   const v3 = new THREE.Vector3();
   function project(x, y, z) { init(); v3.set(x, y, z).project(camera); return { x: (v3.x * 0.5 + 0.5) * W, y: (-v3.y * 0.5 + 0.5) * HT, d: camera.position.distanceTo(new THREE.Vector3(x, y, z)), vis: v3.z < 1 && v3.z > -1 }; }
