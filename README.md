@@ -423,3 +423,29 @@ Made to the owner's `/mad-space` standard in the same first-person format as the
 - Sound (`mix.py`): **no music**. The city at night thins out district by district. Power lines buzz, and each transformer's bang arrives late, at the speed of sound. Then the blackout: dogs, horns, distant sirens, and your breathing. Every line sits at least +12 dB over the effects. Final loudness is −16 LUFS.
 
 Rebuild the audio: `python3 films/storm/prep_voices.py && python3 films/storm/mix.py`, then `node render.js --page storm.html`.
+
+# What if Betelgeuse exploded tonight? (thirteenth film, first person)
+
+Made to the owner's `/mad-space` standard, cozy this time: two friends by the fire in a log cabin on a winter night, at native 60 fps. Open **`nova.html`**, or render it with `node render.js --page nova.html` (writes `out/betelgeuse.mp4` and `out/betelgeuse.srt`).
+
+**The story.**
+- A 3.1 s hook: the payoff, a flash-forward. Out in the snow, your friend points at a blazing new star in Orion: *"A star just exploded. Right there."*
+- Then the cabin: the fire, a mug of tea in your hands, your friend by the mantel, the clock ticking. The countdown (**THE LIGHT ARRIVES IN**, gold 5 4 3 2 1 0) lands on zero as a cold white light pours through the window across the floor.
+- You cross to the window and look up past the eaves: Orion, and where its red shoulder star was, a blue-white point brighter than everything in the sky. Your friend goes out; you set your mug on the sill and see him already standing in the snow.
+- Through the open door and out under the sky. Its neutrinos went through you hours ago. You turn round: your two shadows, cast by one star, lie long across the snow toward the cabin's warm window.
+- He points: it will fade in months, and Orion loses its shoulder forever. Wide ending: over the snowy roof, the two of you small in the snow, long tree shadows, the new star above the valley.
+
+**Facts used.** Betelgeuse is the red supergiant on Orion's shoulder, about 550 light-years away (published estimates run about 550–700). It is so large that in the Sun's place it would reach past the orbit of Mars. A core-collapse supernova's neutrinos arrive hours before its light, and vast numbers would pass through every person. At its peak it would be about as bright as a half Moon, would cast shadows, and would stay visible in daylight for months. A supernova would have to be far closer, around 50 light-years, to harm Earth. Estimates put the explosion within roughly the next 100,000 years. The film compresses the brightening into a moment; in reality it would take hours to days.
+
+**How it's made.**
+- `prep_voices.py` places the friend (ElevenLabs premade "Brian", white captions; the take was checked word for word with Scribe) and the hero ("Lip", #FFD54A captions).
+- `core.js`: one scene clock, the camera keys and your walk (eased paths with a step bob), and Orion's real alt-azimuth for 60° N at local sidereal time 118°, turned so the window faces it.
+- `world.js`:
+  - the sky: the approved per-pixel stars and baked Milky Way (the band along the real winter galactic plane), Orion and its neighbours from their real coordinates (cores and halos by magnitude, the field thinned slightly round them), the Orion Nebula, and the supernova with its halo, glare, short spikes and lit air.
+  - the cabin: log walls, a fieldstone fireplace, mantel clock, rug, armchair, oil lamps, a window with muntins and frost, and a plank door. Outside: a snowy roof with icicles, a stone chimney, and a lantern.
+  - the fire: charred logs with glowing cracks, coals and ash, 7 flame cards plus 5 licks of flowing noise, rising embers, and a flickering key light that throws shadows across the room.
+  - the snow (sparkling only where the star lights it), the valley, the far ridge, and instanced snowy pines. The star is a directional light whose shadow box follows the shot: the window panes on the floor, the trees and the people on the snow.
+  - the people: you (fingerless knit gloves, IK forearms, a mug with steam) and your friend in a cable-knit sweater, beanie, beard and dark glasses (no eyes anywhere).
+- Sound (`mix.py`): **no music**. The fire, the mantel clock (it ticks the countdown down to zero), floorboards, the door, a mug on the sill, snow under your boots, your breath in the cold, and the fire far behind you outside. The supernova itself is silent. Every line sits at least +12 dB over the effects (lowest +19.9 dB). Final loudness is −16 LUFS.
+
+Rebuild the audio: `python3 films/nova/prep_voices.py && python3 films/nova/mix.py`, then `node render.js --page nova.html`.
