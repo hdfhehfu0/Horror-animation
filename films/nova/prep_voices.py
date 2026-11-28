@@ -3,6 +3,8 @@
 The friend (ElevenLabs premade "Brian"; white captions) and the hero (the POV, "Lip"; #FFD54A captions) were generated
 as one take each (friend take A, checked word for word with Scribe). Each take is split at its pauses; pieces that
 belong to one line are joined (with their original pause, or a set gap), and every line is set where its scene plays.
+The story runs by the fire, at the window, out into the snow, to the explosion at the end; three lines of the takes
+are not used ("Where's that light coming from?", the half Moon, Orion losing its shoulder).
 
 Writes films/nova/lines.js, films/nova/audio/narration.wav and films/nova/audio/voice.wav.
 usage: python3 films/nova/prep_voices.py
@@ -12,25 +14,23 @@ import numpy as np
 
 SR = 44100
 B = 'films/nova/'
-DUR = 63.0
+DUR = 59.0
 FRIEND = [  # (start, caption, pieces of the take that make the line, gap between pieces or None for the take's own)
-    (0.06, 'A star just exploded. Right there.', [0, 1], 0.0),
-    (3.3, 'In five seconds, light from an exploding star reaches Earth.', [2], None),
-    (14.6, "That's Betelgeuse. The red star on Orion's shoulder.", [3, 4], None),
-    (18.6, "It's so big that if it replaced our Sun, it would swallow Mars.", [5], None),
-    (24.6, "No. It's over five hundred light-years away.", [6, 7], None),
-    (31.8, 'Hours ago, its neutrinos flew straight through the Earth.', [8], None),
-    (36.7, 'Through us. Billions of billions of them.', [9, 10], None),
-    (40.3, 'Look at the snow. One star is casting shadows.', [11, 12], None),
-    (44.0, "It's as bright as a half Moon. For months, you'll see it in daylight.", [13, 14], None),
-    (48.6, 'Then it fades. And Orion loses its shoulder forever.', [15, 16], None),
-    (57.3, 'It could happen tonight. Or in a hundred thousand years.', [17, 18], None),
+    (0.06, 'A star just exploded. Right there.', [0, 1], 0.0),                       # the hook: a flash-forward to 37.2
+    (7.7, "That's Betelgeuse. The red star on Orion's shoulder.", [3, 4], None),
+    (11.6, "It's so big that if it replaced our Sun, it would swallow Mars.", [5], None),
+    (16.1, 'Hours ago, its neutrinos flew straight through the Earth.', [8], None),
+    (20.95, 'Through us. Billions of billions of them.', [9, 10], None),
+    (25.9, "No. It's over five hundred light-years away.", [6, 7], None),
+    (37.2, 'A star just exploded. Right there.', [0, 1], 0.0),                       # outside: the moment the hook showed
+    (40.5, 'In five seconds, light from an exploding star reaches Earth.', [2], None),
+    (47.0, 'Look at the snow. One star is casting shadows.', [11, 12], None),
+    (54.5, 'It could happen tonight. Or in a hundred thousand years.', [17, 18], None),
 ]
 HERO = [  # (start, caption, pieces, loudness dBFS RMS)
-    (9.1, "Where's that light coming from?", [0], -23),
-    (23.2, 'Can it hurt us?', [1], -21),
-    (35.3, 'Through us?', [2], -22),
-    (52.6, 'So everyone after us gets a different sky.', [3], -22),
+    (19.55, 'Through us?', [2], -22),
+    (24.45, 'Can it hurt us?', [1], -21),
+    (50.6, 'So everyone after us gets a different sky.', [3], -22),
 ]
 
 def load(path):

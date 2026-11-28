@@ -160,11 +160,11 @@
     skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
       uniforms: { uM: { value: cubes.M }, uC: { value: cubes.C }, uVisB: { value: 1 }, uVisF: { value: 1 }, uVisMW: { value: 1 },
-        uPx: { value: 0.0006 }, uS: { value: 0 }, uNova: { value: 0 }, uBet: { value: SDIR }, uM42: { value: radec(83.82, -5.39) }, uOri: { value: radec(83.8, -0.8) },
+        uPx: { value: 0.0006 }, uS: { value: 0 }, uNova: { value: 0 }, uBurst: { value: 0 }, uBet: { value: SDIR }, uM42: { value: radec(83.82, -5.39) }, uOri: { value: radec(83.8, -0.8) },
         uMWa: { value: MW.a }, uMWb: { value: MW.b }, uMWc: { value: MW.c }, uSt: { value: sv }, uStC: { value: sc } },
       vertexShader: 'varying vec3 vDir;\nvoid main(){\n vDir = position;\n vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n gl_Position = p.xyww;\n}',
       fragmentShader: `uniform samplerCube uM; uniform samplerCube uC; uniform float uVisB; uniform float uVisF; uniform float uVisMW;
-        uniform float uPx; uniform float uS; uniform float uNova; uniform vec3 uBet; uniform vec3 uM42; uniform vec3 uOri; uniform vec4 uSt[${NS}]; uniform vec3 uStC[${NS}];
+        uniform float uPx; uniform float uS; uniform float uNova; uniform float uBurst; uniform vec3 uBet; uniform vec3 uM42; uniform vec3 uOri; uniform vec4 uSt[${NS}]; uniform vec3 uStC[${NS}];
         varying vec3 vDir;
         ${NOISE}
         ${SKYLIB}
@@ -233,8 +233,8 @@
             vec3 mw = textureCube(uC, d).rgb * uVisMW * smoothstep(0.0, 0.16, d.y) * (0.35 + 0.65 * wash);
             // Betelgeuse: an orange-red giant until the light arrives, then the supernova
             float ad = degrees(an), px = an / uPx;
-            vec3 bet = vec3(1.0, 0.56, 0.28) * (13.0 * exp(-px * px / (2.0 * 1.5 * 1.5)) + 0.32 * exp(-ad * ad / (2.0 * 0.32 * 0.32))) * (1.0 - smoothstep(0.0, 0.25, uNova));
-            if (uNova > 0.0 && ad < 14.0) {
+            vec3 bet = vec3(1.0, 0.52, 0.25) * (17.0 * exp(-px * px / (2.0 * 1.7 * 1.7)) + 0.45 * exp(-ad * ad / (2.0 * 0.36 * 0.36))) * (1.0 - smoothstep(0.0, 0.25, uNova));
+            if (uNova > 0.0 && ad < 40.0) {
               vec3 up = vec3(0.0, 1.0, 0.0), e1 = normalize(cross(up, uBet)), e2 = cross(uBet, e1);
               vec2 q = vec2(dot(d - uBet, e1), dot(d - uBet, e2)) / uPx;          // pixels from the star
               float r = length(q), sp = 0.0;
@@ -243,6 +243,9 @@
               bet += uNova * (nc * 90.0 * exp(-r * r / (2.0 * 2.2 * 2.2))
                     + vec3(0.62, 0.76, 1.0) * (1.4 * exp(-ad * ad / (2.0 * 0.3 * 0.3)) + 0.42 * exp(-ad * ad / (2.0 * 1.4 * 1.4)) + 0.05 * exp(-ad * ad / (2.0 * 5.0 * 5.0)))
                     + vec3(0.7, 0.8, 1.0) * sp * 0.4);
+              // the moment it arrives: a flare that blooms and dies away in about a second
+              bet += uBurst * (vec3(0.78, 0.87, 1.0) * (2.2 * exp(-ad * ad / (2.0 * 0.9 * 0.9)) + 0.5 * exp(-ad * ad / (2.0 * 3.2 * 3.2)) + 0.1 * exp(-ad * ad / (2.0 * 9.0 * 9.0)))
+                    + vec3(0.8, 0.88, 1.0) * sp * 1.3 * exp(-r / 160.0));
             }
             float bk = max(bet.r, max(bet.g, bet.b)); bet *= 1.8 / (1.0 + 0.8 * bk);
             col += st + mw + bet * smoothstep(-0.01, 0.02, d.y);
@@ -390,26 +393,64 @@
     const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); rg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); rg.setIndex(idx); rg.computeVertexNormals();
     const ridge = new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); scene.add(ridge);
   }
-  // a snowy pine: stacked drooping tiers, snow lying on their upper faces
-  function pineGeo(seed) {
-    const r = U.mulberry32(seed), pos = [], nor = [], col = [];
-    const add = (geo, tint) => { const g2 = geo.toNonIndexed(), P = g2.attributes.position, N = g2.attributes.normal; for (let i = 0; i < P.count; i++) { pos.push(P.getX(i), P.getY(i), P.getZ(i)); nor.push(N.getX(i), N.getY(i), N.getZ(i)); col.push(...tint(P.getY(i), N.getY(i), i)); } };
-    add(new THREE.CylinderGeometry(0.035, 0.06, 0.3, 6).translate(0, 0.15, 0), () => [0.16, 0.11, 0.08]);
-    const tiers = 7;
+  // a snowy spruce, built branch by branch: a trunk, whorls of drooping fronds (needles above, darker below, ragged
+  // edges), snow lying in mounds along their upper faces, a thin leader at the top. lod 0 near, 1 middle, 2 far.
+  // Unit height; two groups: 0 needles and bark (vertex colours x a needle texture), 1 snow.
+  function spruceGeo(seed, lod) {
+    const r = U.mulberry32(seed * 7 + lod * 131), N = { p: [], c: [], uv: [], i: [] }, Sn = { p: [], c: [], uv: [], i: [] };
+    const vtx = (B, x, y, z, col, u, v) => { B.p.push(x, y, z); B.c.push(...col); B.uv.push(u, v); return B.p.length / 3 - 1; };
+    const quadStrip = (B, rows, flip) => { for (let j = 0; j < rows.length - 1; j++) for (let k = 0; k < rows[j].length - 1; k++) { const a2 = rows[j][k], b2 = rows[j][k + 1], c2 = rows[j + 1][k], d2 = rows[j + 1][k + 1]; if (flip) B.i.push(a2, b2, c2, b2, d2, c2); else B.i.push(a2, c2, b2, b2, c2, d2); } };
+    // the trunk
+    { const seg = 7, rows = []; for (const [y, rr] of [[0, 0.022], [0.5, 0.013], [0.97, 0.003]]) { const row = []; for (let k = 0; k <= seg; k++) { const a2 = k / seg * Math.PI * 2; row.push(vtx(N, Math.cos(a2) * rr, y, Math.sin(a2) * rr, [0.14, 0.1, 0.075], k / seg, y)); } rows.push(row); } quadStrip(N, rows); }
+    const tiers = [24, 10, 7][lod], ns = [5, 2, 1][lod], gold = 2.39996;
     for (let k = 0; k < tiers; k++) {
-      const y0 = 0.12 + k * 0.12, hgt = 0.27 - k * 0.01, rad = 0.31 - k * 0.038;
-      const cone = new THREE.ConeGeometry(rad, hgt, 10, 1); cone.rotateY(r() * 6.28); cone.translate(0, y0 + hgt / 2, 0);
-      const P = cone.attributes.position;
-      for (let i = 0; i < P.count; i++) {
-        const y = P.getY(i), x = P.getX(i), z = P.getZ(i), rr = Math.hypot(x, z);
-        if (y < y0 + 0.02 && rr > 0.01) { const j = 0.6 + 0.75 * U.hash(i * 3.7 + k * 11 + seed), a2 = Math.atan2(z, x) + (r() - 0.5) * 0.25; P.setXYZ(i, Math.cos(a2) * rr * j, y - 0.05 * j * (0.6 + r() * 0.8), Math.sin(a2) * rr * j); }
-        else if (rr > 0.01) { const j = 0.85 + 0.3 * r(); P.setX(i, x * j); P.setZ(i, z * j); }
+      const u = k / (tiers - 1), y0 = 0.07 + 0.88 * Math.pow(u, 0.92) + (r() - 0.5) * 0.012;
+      const nb = Math.max(3, Math.round([4 + 5 * (1 - u), 3 + 2.5 * (1 - u), 3 + 1.5 * (1 - u)][lod]));
+      for (let b2 = 0; b2 < nb; b2++) {
+        const a2 = k * gold + b2 / nb * Math.PI * 2 + (r() - 0.5) * 0.5, dx = Math.cos(a2), dz = Math.sin(a2), sx = -dz, sz = dx;
+        const L = (0.235 * Math.pow(1 - u, 0.95) + 0.018) * (0.82 + 0.36 * r()), droop = (0.42 + 0.4 * (1 - u)) * L, wMul = 0.85 + 0.3 * r();
+        const snow = r() < 0.13 ? 0 : (0.55 + 0.45 * r()) * (lod === 2 ? 0.8 : 1);
+        const top = [], bot = [], sn = [], g0 = 0.05 + 0.04 * r();
+        for (let j = 0; j <= ns; j++) {
+          const t = j / ns, cx = dx * L * t, cz = dz * L * t, cy = y0 + 0.05 * L * t - droop * Math.pow(t, 1.7);
+          const jag = j > 0 && j < ns ? 0.75 + 0.5 * r() : 1, w = L * (0.13 + 0.36 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.08)), 0.8)) * wMul * jag + (j === ns ? 0.004 : 0);
+          const th = 0.16 * w + 0.004, dr = 0.28 * w, lit = 0.8 + 0.4 * r();
+          const gT = [g0 * 0.9 * lit, (0.1 + 0.03 * t) * lit, (0.068 + 0.012 * t) * lit], gB = [0.03, 0.05, 0.04];
+          // far away the snow is just white along the branch's top (no mounds)
+          const sk = lod > 0 && t < 0.9 ? snow * (0.55 + 0.45 * Math.sin(Math.PI * Math.min(1, t * 1.25))) : 0, gR = gT.map((v, q) => U.lerp(v, [0.86, 0.9, 0.96][q], sk));
+          top.push([vtx(N, cx - sx * w, cy - dr, cz - sz * w, gT, t, 0), vtx(N, cx, cy + 0.03 * w, cz, gR, t, 0.5), vtx(N, cx + sx * w, cy - dr, cz + sz * w, gT, t, 1)]);
+          bot.push([vtx(N, cx + sx * w, cy - dr - 0.002, cz + sz * w, gB, t, 1), vtx(N, cx, cy - th, cz, gB, t, 0.5), vtx(N, cx - sx * w, cy - dr - 0.002, cz - sz * w, gB, t, 0)]);
+          if (lod === 0 && snow > 0 && t >= 0.06 && t <= 0.86) {
+            const e = Math.min(1, Math.min(t - 0.06, 0.86 - t) / 0.12), ws = w * 0.6 * snow * (0.35 + 0.65 * e), hs = (0.1 * w + 0.004) * snow * (0.4 + 0.6 * e) * (1 - 0.35 * t);
+            const wc = [0.88, 0.91, 0.96];
+            sn.push([[-1, -0.2], [-0.35, 1], [0.35, 1], [1, -0.2]].map(([q, hk]) => vtx(Sn, cx + sx * ws * q, cy + 0.03 * w + (hk > 0 ? hs : -0.25 * ws * 0.5) + 0.002, cz + sz * ws * q, wc, t, (q + 1) / 2)));
+          }
+        }
+        quadStrip(N, top, true); quadStrip(N, bot, true); if (sn.length > 1) quadStrip(Sn, sn, true);   // fronds face up (top, snow) and down (bottom)
       }
-      cone.computeVertexNormals();
-      add(cone, (y, ny, i) => { const top = U.smooth(y0 - 0.02, y0 + hgt * 0.7, y), sn = U.clamp(0.15 + 0.85 * top * (0.45 + 0.7 * U.hash(i * 1.7 + seed + k))) * (ny > 0.25 ? 1 : 0.12); return [U.lerp(0.06, 0.86, sn), U.lerp(0.1, 0.9, sn), U.lerp(0.075, 0.96, sn)]; });
     }
-    const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g2.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g2.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    return g2;   // unit height (about 1.0)
+    // the leader
+    { const row0 = [], c0 = [0.05, 0.1, 0.07]; for (let k = 0; k <= 5; k++) { const a2 = k / 5 * Math.PI * 2; row0.push(vtx(N, Math.cos(a2) * 0.01, 0.94, Math.sin(a2) * 0.01, c0, k / 5, 0)); } const tip = []; for (let k = 0; k <= 5; k++) tip.push(vtx(N, 0, 1.04, 0, c0, k / 5, 1)); quadStrip(N, [row0, tip]); }
+    const g2 = new THREE.BufferGeometry(), n0 = N.p.length / 3;
+    g2.setAttribute('position', new THREE.Float32BufferAttribute(N.p.concat(Sn.p), 3));
+    g2.setAttribute('color', new THREE.Float32BufferAttribute(N.c.concat(Sn.c), 3));
+    g2.setAttribute('uv', new THREE.Float32BufferAttribute(N.uv.concat(Sn.uv), 2));
+    g2.setIndex(N.i.concat(Sn.i.map((v) => v + n0)));
+    g2.addGroup(0, N.i.length, 0); g2.addGroup(N.i.length, Sn.i.length, 1);
+    g2.computeVertexNormals();
+    return g2;
+  }
+  // needles: short dark and light strokes along the frond, angled out from its midline
+  function needleTex() {
+    return canvasTex(256, (x, n) => {
+      x.fillStyle = '#b8c0b4'; x.fillRect(0, 0, n, n);
+      const rr = U.mulberry32(77);
+      for (let i = 0; i < 2600; i++) {
+        const px = rr() * n, py = rr() * n, side = py < n / 2 ? -1 : 1, L = 6 + rr() * 10, a2 = side * (0.9 + 0.35 * rr());
+        x.strokeStyle = rr() < 0.55 ? `rgba(20,32,22,${0.35 + 0.4 * rr()})` : `rgba(235,245,230,${0.18 + 0.25 * rr()})`; x.lineWidth = 1 + rr() * 1.3;
+        x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a2) * L * 0.5, py + Math.sin(a2) * L); x.stroke();
+      }
+    }, [5, 1], true);
   }
   function trees() {
     const T = [], keepOut = (x, z) => Math.hypot(x - 1, z + 1) < 15;
@@ -428,14 +469,26 @@
     for (const [az, d, h] of [[2, 15, 7.5], [9, 23, 9.5], [-6, 30, 11], [52, 13, 6.5], [60, 22, 9], [47, 31, 10.5], [14, 39, 12], [62, 5.8, 4.2], [78, 7.6, 5.4], [55, 9.5, 5.0], [90, 11, 6.0]]) {
       const a = (TL.BETEL.az + az - 25.5) * D2R; T.push([O[0] + Math.sin(a) * d, O[2] - Math.cos(a) * d, h]);
     }
-    const geos = [pineGeo(1), pineGeo(2), pineGeo(3)], mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
-    const groups = [[], [], []]; T.forEach((t, i) => groups[i % 3].push(t));
-    const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), V = new THREE.Vector3();
-    groups.forEach((G, gi) => {
-      const im = new THREE.InstancedMesh(geos[gi], mat, G.length); im.castShadow = true; im.receiveShadow = true; treeMeshes.push(im);
-      G.forEach(([x, z, h], i) => { Q.setFromAxisAngle(UPY, rnd() * 6.28); S.set(h * R(0.85, 1.1), h, h * R(0.85, 1.1)); V.set(x, groundY(x, z) - 0.15, z); M.compose(V, Q, S); im.setMatrixAt(i, M); });
-      scene.add(im);
+    // three levels of detail by distance from where the film happens; two shapes at each
+    const nTex = needleTex(); nTex.anisotropy = 2; const needles = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, map: nTex });
+    const snowT = new THREE.MeshStandardMaterial({ color: '#e6edf7', roughness: 0.82 });
+    const needlesFar = new THREE.MeshLambertMaterial({ vertexColors: true, map: nTex }), snowFar = new THREE.MeshLambertMaterial({ color: '#e6edf7' });
+    const geos = [0, 1, 2].map((lod) => [spruceGeo(1, lod), spruceGeo(2, lod)]);
+    // ... and eight compass sectors round the clearing, so whatever is outside the view (or the shadow's box) is skipped
+    const groups = {}, cnt = [0, 0, 0];
+    T.forEach((t, i) => {
+      const d = Math.hypot(t[0] - 4, t[1] + 6), lod = d < 36 ? 0 : d < 110 ? 1 : 2, sec = Math.floor((Math.atan2(t[1] + 6, t[0] - 4) + Math.PI) / (2 * Math.PI) * 8) % 8;
+      const key = `${lod}_${i % 2}_${sec}`; (groups[key] = groups[key] || []).push(t); cnt[lod]++;
     });
+    const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), V = new THREE.Vector3();
+    Object.keys(groups).sort().forEach((key) => {
+      const [lod, gi] = key.split('_').map(Number), G = groups[key];
+      const im = new THREE.InstancedMesh(geos[lod][gi], lod ? [needlesFar, snowFar] : [needles, snowT], G.length); im.castShadow = lod < 2; im.userData.casts = lod < 2; im.receiveShadow = lod === 0; treeMeshes.push(im);
+      G.sort((a2, b2) => Math.hypot(a2[0] - 4, a2[1] + 6) - Math.hypot(b2[0] - 4, b2[1] + 6));   // nearest first: hidden branches fail the depth test early
+      G.forEach(([x, z, h], i) => { Q.setFromAxisAngle(UPY, rnd() * 6.28); S.set(h * R(0.85, 1.1), h, h * R(0.85, 1.1)); V.set(x, groundY(x, z) - 0.12, z); M.compose(V, Q, S); im.setMatrixAt(i, M); });
+      im.computeBoundingSphere(); scene.add(im);
+    });
+    console.log('trees', cnt.join('/'), 'tris', geos.map((g2) => g2[0].index.count / 3).join('/'), 'meshes', Object.keys(groups).length);
     // snow-covered rocks and drifts near the cabin
     for (let i = 0; i < 26; i++) { const a = rnd() * 6.28, d = R(5, 22), x = 2 + Math.cos(a) * d, z = -4 + Math.sin(a) * d; if (Math.hypot(x - 5, z + 8.5) < 3) continue; const m = mesh(new THREE.SphereGeometry(R(0.25, 0.8), 10, 7), std('#eef3fa', 0.85), x, groundY(x, z) - 0.1, z); m.scale.y = R(0.35, 0.6); scene.add(m); }
   }
@@ -498,7 +551,7 @@
     doorLamp = new THREE.Group(); doorLamp.position.set(4.12, 1.95, -3.34); scene.add(doorLamp);
     doorLamp.add(mesh(box(0.14, 0.22, 0.14), std('#1c1a18', 0.5), 0, 0, 0, { cast: false }));
     doorLamp.add(mesh(box(0.1, 0.16, 0.1), new THREE.MeshBasicMaterial({ color: '#ffb15c' }), 0, 0, 0, { cast: false }));
-    outWarm = new THREE.PointLight('#ffb66e', 1.6, 9, 1.6); outWarm.position.set(4.12, 1.9, -3.6); scene.add(outWarm);
+    outWarm = new THREE.PointLight('#ffb66e', 2.4, 14, 1.5); outWarm.position.set(4.12, 1.9, -3.6); scene.add(outWarm);
     for (let i = 0; i < 7; i++) for (let j = 0; j < 9; j++) { const z = -1.8 + j * 0.27 + (i % 2) * 0.13; scene.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.55, 8), std(['#6e5338', '#5e4630', '#7a5e40'][(i + j) % 3], 0.95), IN.x1 + t + 0.32, GROUND + 0.13 + i * 0.23, z, { rz: Math.PI / 2, ry: 0 })); }
     scene.add(slab(IN.x1 + t + 0.02, GROUND + 1.7, -2.0, IN.x1 + t + 0.62, GROUND + 1.86, 0.6, std('#eef3fb', 0.8)));
     // the north side's windows, warm from inside (seen in the wide shot)
@@ -686,12 +739,13 @@
 
   /* ------------------------------ people: you and your friend (men; cable-knit sweaters, beanies, beards, dark glasses: no eyes anywhere) ------------------------------ */
   const SKIN = '#b48466', KNIT_GLOVE = '#b5a283';
-  function limb(mat, rA, rB) { const g2 = new THREE.CylinderGeometry(rB, rA, 1, 12, 1); g2.translate(0, 0.5, 0); const m = new THREE.Mesh(g2, mat); m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; scene.add(m); return m; }
+  function limb(mat, rA, rB) { const g2 = new THREE.CylinderGeometry(rB, rA, 1, 22, 1); g2.translate(0, 0.5, 0); const m = new THREE.Mesh(g2, mat); m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; scene.add(m); return m; }
   function setLimb(m, A, B) { const d = B.clone().sub(A); m.position.copy(A); m.scale.set(1, d.length(), 1); m.quaternion.setFromUnitVectors(UPY, d.normalize()); }
   // a hand in a fingerless knit glove; local -z runs along the fingers, curl bends them toward -y (the palm side)
   function hand(curl) {
     const T = textures(), grp = new THREE.Group(), glove = std(KNIT_GLOVE, 0.95, T.fine), skin = std(SKIN, 0.6), fingers = [];
-    grp.add(mesh(new THREE.BoxGeometry(0.084, 0.03, 0.094, 2, 1, 2), glove, 0, 0, 0, { cast: false }));
+    { const m = mesh(new THREE.SphereGeometry(0.05, 20, 12), glove, 0, 0, 0, { cast: false }); m.scale.set(0.86, 0.3, 0.98); grp.add(m); }      // the palm, rounded
+    grp.add(mesh(new THREE.CapsuleGeometry(0.0115, 0.058, 4, 10), glove, 0, 0.002, -0.041, { rz: Math.PI / 2, cast: false }));                // the knuckles
     { const m = mesh(new THREE.SphereGeometry(0.045, 10, 6), glove, 0, 0.004, 0.012, { cast: false }); m.scale.set(1, 0.42, 1.1); grp.add(m); }
     for (let i = 0; i < 4; i++) {
       const f = new THREE.Group(); f.position.set(-0.032 + i * 0.021, 0, -0.046); grp.add(f);
@@ -708,10 +762,25 @@
     grp.add(mesh(new THREE.CylinderGeometry(0.044, 0.048, 0.09, 12), std(KNIT_GLOVE, 0.95, T.knit), 0, 0, 0.075, { rx: Math.PI / 2, cast: false }));   // the glove's cuff
     grp.userData.fingers = fingers; grp.userData.thumb = th; setCurl(grp, curl); return grp;
   }
+  // the mug hold: right hand -- index and middle straight through the handle, ring and little curled under it;
+  // left hand -- fingers curving up round the base. Blended in by k.
+  function mugCurl(h, rightH, k) {
+    const C2 = rightH ? [[1.25, 1.45, 0.9], [1.15, 1.35, 0.85], [0.18, 0.3, 0.25], [0.12, 0.26, 0.22]] : [[0.32, 0.5, 0.4], [0.3, 0.48, 0.38], [0.28, 0.46, 0.36], [0.26, 0.44, 0.34]];
+    h.userData.fingers.forEach(({ f, mid, tip }, i) => { f.rotation.x = U.lerp(f.rotation.x, -C2[i][0], k); mid.rotation.x = U.lerp(mid.rotation.x, -C2[i][1], k); tip.rotation.x = U.lerp(tip.rotation.x, -C2[i][2], k); f.rotation.y = U.lerp(f.rotation.y, 0, k); });
+  }
   function setCurl(h, curl, spread = 0) { h.userData.fingers.forEach(({ f, mid, tip }, i) => { const c = curl * (0.9 + 0.08 * i); f.rotation.x = -c * 0.8; mid.rotation.x = -c * 1.0; tip.rotation.x = -c * 0.7; f.rotation.y = (i - 1.5) * 0.06 * spread; }); }
   function man(o) {
     const T = textures(), grp = new THREE.Group(), sw = std(o.sweater, 0.95, T.knit), trous = std(o.trousers, 0.9, T.fine), knit = std(o.cap, 1.0, T.knit), skin = std(SKIN, 0.62);
-    for (const s of [-1, 1]) { grp.add(mesh(new THREE.CapsuleGeometry(0.075, 0.72, 4, 10), trous, s * 0.105, 0.5, 0)); grp.add(mesh(box(0.115, 0.1, 0.28), std('#231b15', 0.6), s * 0.105, 0.05, -0.05)); }
+    const boot = std('#231b15', 0.6); grp.userData.legs = [];
+    for (const s of [-1, 1]) {                                                    // hip, knee and ankle pivots, so he can walk
+      const hip = new THREE.Group(); hip.position.set(s * 0.105, 0.9, 0); hip.userData.isHip = true; grp.add(hip);
+      hip.add(mesh(new THREE.CapsuleGeometry(0.08, 0.3, 4, 10), trous, 0, -0.22, 0));
+      const knee = new THREE.Group(); knee.position.set(0, -0.44, 0); hip.add(knee);
+      knee.add(mesh(new THREE.CapsuleGeometry(0.068, 0.3, 4, 10), trous, 0, -0.2, 0));
+      const ankle = new THREE.Group(); ankle.position.set(0, -0.41, 0); knee.add(ankle);
+      ankle.add(mesh(box(0.115, 0.1, 0.28), boot, 0, 0, -0.05));
+      grp.userData.legs.push({ hip, knee, ankle });
+    }
     const prof = [[0.0, 0.0], [0.19, 0.0], [0.215, 0.06], [0.235, 0.3], [0.245, 0.5], [0.24, 0.6], [0.2, 0.68], [0.12, 0.72], [0.0, 0.73]].map(([r, y]) => new THREE.Vector2(r, y));
     const body = mesh(new THREE.LatheGeometry(prof, 28), sw, 0, 0.84, 0); body.scale.set(1.08, 1, 0.74); grp.add(body);
     grp.add(mesh(new THREE.TorusGeometry(0.2, 0.045, 8, 24), sw, 0, 0.88, 0, { rx: Math.PI / 2 }));                   // ribbed hem
@@ -740,6 +809,19 @@
     return grp;
   }
   function poseArm(P, i, S, E, Wr) { const a = P.userData.arms[i]; setLimb(a.up, S, E); setLimb(a.fore, E, Wr); a.elbow.position.copy(E); }
+  // a walking stride: legs swing from the hip, the knee folds through the swing, the body dips at double support;
+  // returns the arm swing (-1..1) for the hands
+  function walkPose(P, d, moving) {
+    const ph = d / 1.42 * Math.PI * 2, A = 0.4 * moving;
+    P.userData.legs.forEach((L, i) => {
+      const f = ph + i * Math.PI;
+      L.hip.rotation.x = A * Math.sin(f);
+      L.knee.rotation.x = -moving * (0.85 * Math.pow(Math.max(0, Math.cos(f)), 1.6) + 0.06);
+      L.ankle.rotation.x = -(L.hip.rotation.x + L.knee.rotation.x) * 0.75;
+    });
+    return { drop: 0.55 * 0.88 * (1 - Math.cos(A * Math.abs(Math.sin(ph)))), swing: Math.sin(ph) * moving };
+  }
+  function standPose(P) { P.userData.legs.forEach((L) => { L.hip.rotation.x = 0; L.knee.rotation.x = 0; L.ankle.rotation.x = 0; }); }
   function setPersonVisible(P, v) { P.visible = v; P.userData.arms.forEach((a) => { a.up.visible = a.fore.visible = a.elbow.visible = v; }); }
   function ik(S, Wp, L1, L2, hint) {
     const d = Wp.clone().sub(S), dl = Math.min(d.length(), L1 + L2 - 1e-4), u = d.clone().normalize();
@@ -753,7 +835,7 @@
     grp.add(mesh(new THREE.CylinderGeometry(0.039, 0.039, 0.006, 24), cer, 0, 0.003, 0));
     grp.add(mesh(new THREE.TorusGeometry(0.043, 0.004, 6, 24), cer, 0, 0.1, 0, { rx: Math.PI / 2, cast: false }));
     grp.add(mesh(new THREE.CircleGeometry(0.04, 24), std('#3a1c0a', 0.2), 0, 0.082, 0, { rx: -Math.PI / 2, cast: false }));            // tea
-    grp.add(mesh(new THREE.TorusGeometry(0.026, 0.0075, 8, 16, Math.PI * 1.2), cer, 0.05, 0.05, 0, { rz: -Math.PI * 0.6, cast: false }));   // handle (+x)
+    grp.add(mesh(new THREE.TorusGeometry(0.031, 0.0075, 8, 20, Math.PI * 1.2), cer, 0.054, 0.052, 0, { rz: -Math.PI * 0.6, cast: false }));   // handle (+x): two fingers fit through it
     return grp;
   }
   function people() {
@@ -770,7 +852,7 @@
     // without it the snow would show only your legs and a floating forearm
     const ghost = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
     const ud = heroFig.userData; heroFig.userData = {}; heroShadow = heroFig.clone(); heroFig.userData = ud;
-    heroShadow.children.filter((c) => c.position.y < 0.6).forEach((c) => heroShadow.remove(c));          // the legs: povLegs cast those
+    heroShadow.children.filter((c) => c.userData.isHip).forEach((c) => heroShadow.remove(c));             // the legs: povLegs cast those
     heroShadow.traverse((o) => { if (o.isMesh) { o.material = ghost; o.receiveShadow = false; } });
     scene.add(heroShadow);
     povArms.forEach((a) => { a.up.material = ghost; a.up.receiveShadow = false; });
@@ -839,38 +921,37 @@
     h.quaternion.copy(quatBasis(X, Y, Z)); h.position.copy(P);
   }
   let shadowMode = '';
-  const LOOKC = (() => { const h = new THREE.Vector3(-SDIR.x, 0, -SDIR.z).normalize(), c = new THREE.Vector3(5.0, 0, -8.5).addScaledVector(h, 2.0); c.y = groundY(c.x, c.z); return c; })();
   function setShadowBox(center, half, far, size = 2048) {
     if (starLight.shadow.mapSize.x !== size) { starLight.shadow.mapSize.set(size, size); if (starLight.shadow.map) { starLight.shadow.map.dispose(); starLight.shadow.map = null; } }
     starLight.position.copy(center).addScaledVector(SDIR, far * 0.5); starLight.target.position.copy(center); starLight.target.updateMatrixWorld();
     const c = starLight.shadow.camera; c.left = -half; c.right = half; c.top = half; c.bottom = -half; c.near = 0.5; c.far = far; c.updateProjectionMatrix();
   }
   function update(t) {
-    const s = TL.sceneT(t), C = TL.cam(t), nova = TL.nova(s), inside = !C.wide && TL.inside(s);
+    const s = TL.sceneT(t), C = TL.cam(t), nova = TL.nova(s), burst = TL.burst(s), inside = !C.wide && TL.inside(s);
     skyInside = inside && C.z > -3.0;
     camera.position.set(C.x, C.y, C.z); camera.rotation.set(C.pitch, C.yaw, C.roll); camera.fov = C.fov; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     // the sky
     const U2 = skyMat.uniforms;
-    U2.uPx.value = 2 * Math.tan(C.fov * D2R / 2) / HT; U2.uS.value = s; U2.uNova.value = nova;
+    U2.uPx.value = 2 * Math.tan(C.fov * D2R / 2) / HT; U2.uS.value = s; U2.uNova.value = nova; U2.uBurst.value = burst;
     U2.uVisB.value = TL.visBright(s); U2.uVisF.value = TL.visFaint(s); U2.uVisMW.value = TL.visMW(s);
     // the star's light: shadows sized to where you are (the room, the slope, or the wide view)
-    starLight.intensity = 2.3 * nova;
+    starLight.intensity = 2.3 * (nova + 0.55 * burst);
     const mode = C.wide ? 'wide' : inside ? 'in' : 'out';
-    // looking back at the cabin, your two shadows lie right in front of you: a tight, fine box round them, switched while
-    // the turn shows only shadowless snow, so nothing else visibly changes
-    const smode = mode === 'out' && s > 40.7 && s < 44.4 ? 'look' : mode;
+    // once the star has gone, its shadows lie everywhere outside: the same box, with a finer map (your own shadow at
+    // your feet stays sharp, and no tree's shadow can appear or vanish when the map changes)
+    const smode = mode === 'out' && s > TL.ZERO - 0.05 ? 'outFine' : mode;
     if (smode !== shadowMode) {
       shadowMode = smode;
       if (smode === 'in') setShadowBox(V3(1.6, 1.0, -1.0), 4.6, 40);
       else if (smode === 'out') setShadowBox(V3(9, 0, -18), 30, 160);
-      else if (smode === 'look') setShadowBox(LOOKC, 7, 60, 4096);
+      else if (smode === 'outFine') setShadowBox(V3(9, 0, -18), 30, 160, 8192);
       else setShadowBox(V3(4, 0, -8), 18, 120);
     }
     fireKey.castShadow = inside;
-    treeMeshes.forEach((m) => { m.castShadow = !inside; });
+    treeMeshes.forEach((m) => { m.castShadow = !inside && m.userData.casts !== false; });
     fireLow.visible = lampLight.visible = doorLight.visible = inside; fireKey.visible = fireFill.visible = !C.wide;
     outWarm.visible = !inside; northWarm.visible = C.wide;
-    hemi.intensity = (inside ? 0.16 : 0.34) + 0.16 * nova; hemi.color.set('#34446a').lerp(new THREE.Color('#7d93c8'), 0.5 * nova);
+    hemi.intensity = (inside ? 0.16 : 0.46) + 0.12 * nova + 0.12 * burst; hemi.color.set('#34446a').lerp(new THREE.Color('#7d93c8'), 0.5 * nova);
     snowU.uNova.value = nova; snowU.uCamQ.value.set(Math.floor(C.x * 6), Math.floor(C.y * 6), Math.floor((C.yaw + C.pitch) * 40));
     // the fire: flicker on every light and flame, from one noise
     const fl = 0.82 + 0.12 * U.snoise(s * 7.1) + 0.07 * U.snoise(s * 17.3 + 4) + 0.04 * Math.sin(s * 31);
@@ -898,39 +979,45 @@
     heroShadow.visible = showPov && !inside;
     heroShadow.position.set(C.x, C.y - 1.81, C.z); heroShadow.rotation.set(0, C.yaw, 0);
     povLegs.position.set(C.x, C.y, C.z); povLegs.quaternion.copy(bodyQ); if (s < 12.0) povLegs.visible = false;
-    // the mug: in both hands, then carried to the sill
-    const held = bodyAt(0.03, -0.3 + walkBob, -0.46), sill = V3(2.42, 0.8, -2.91), mk = TL.mugSet(s);
+    // the mug: your right hand's first two fingers through the handle, the thumb on top of it; your left hand under it,
+    // the thumb up its side. Carried to the window and set on the sill.
+    const held = bodyAt(-0.03, -0.3 + walkBob, -0.44), sill = V3(1.98, 0.8, -2.91), mk = TL.mugSet(s);
     let mugP = held.clone().lerp(sill, U.easeInOut(mk)); if (mk > 0 && mk < 1) mugP.y += 0.05 * Math.sin(Math.PI * mk);
-    heroMug.position.copy(mugP); heroMug.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(UPY, C.yaw + (mk > 0.5 ? 0.6 : 0)));
-    heroMug.visible = !C.wide;
+    heroMug.position.copy(mugP); heroMug.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(UPY, C.yaw - 0.12 + (mk > 0.5 ? 0.4 * U.smooth(0.5, 1, mk) : 0)));
+    heroMug.visible = !C.wide; heroMug.updateMatrixWorld(true);
+    const mL = (x, y, z) => heroMug.localToWorld(V3(x, y, z)), mD = (x, y, z) => V3(x, y, z).transformDirection(heroMug.matrixWorld);
     steam.position.copy(mugP); steam.rotation.y = Math.atan2(C.x - mugP.x, C.z - mugP.z); steamMat.uniforms.uT.value = s; steamMat.uniforms.uA.value = 1 - U.smooth(26, 29, s);
     const hands = [0, 1].map((i) => {
       const sg = i ? 1 : -1, rightH = i === 1;
-      let P, Pn, F, curl = 1.05;
-      const mugSide = mugP.clone().add(right.clone().multiplyScalar(sg * 0.052)).add(V3(0, 0.035, 0));
+      let P, Pn, F, curl = 0.62, thumb = 1;
+      const gP = rightH ? mL(0.066, 0.034, 0.064) : mL(-0.01, -0.017, 0.014), gN = rightH ? mD(-1, 0, 0) : V3(0, 1, 0);
+      const gF = rightH ? mD(0, 0, -1) : mD(0.55, 0, -0.83).normalize();
       const restP = bodyAt(sg * 0.24, -0.78, -0.08), restN = right.clone().multiplyScalar(-sg), restF = V3(0, -1, 0).addScaledVector(fwd, 0.2);
-      if (s < 22.7 || (rightH && s < 23.6)) {             // round the mug (the right hand carries it to the sill)
-        P = mugSide.clone().addScaledVector(fwd, 0.035); Pn = right.clone().multiplyScalar(-sg); F = fwd.clone().addScaledVector(right, -sg * 0.35); curl = 1.05;
-        if (!rightH) {                                    // your left hand lets go when the mug goes on the sill
-          if (s > 22.4) { const k = U.smooth(22.4, 23.2, s); P = P.clone().lerp(restP, k); Pn = Pn.clone().lerp(restN, k).normalize(); F = F.clone().lerp(restF, k).normalize(); }
-        } else if (s > 23.2) { const k = U.smooth(23.2, 23.6, s); P = P.clone().lerp(restP, k); Pn = Pn.clone().lerp(restN, k).normalize(); F = F.clone().lerp(restF, k).normalize(); curl = U.lerp(1.05, 0.5, k); }
-      } else { P = restP; Pn = restN; F = restF; curl = 0.5; }
-      if (rightH) {
+      const lerpTo = (k, P2, N2, F2, c2) => { P = P.clone().lerp(P2, k); Pn = Pn.clone().lerp(N2, k).normalize(); F = F.clone().lerp(F2, k).normalize(); curl = U.lerp(curl, c2, k); };
+      P = gP; Pn = gN; F = gF;
+      if (!rightH) {                                    // your left hand lets go as the mug goes to the sill
+        const k = U.smooth(18.0, 18.7, s); if (k > 0) { lerpTo(k, restP, restN, restF, 0.5); thumb = 1 - k; }
+      } else {                                          // the right hand carries it there, then lets go
+        const k = U.smooth(19.0, 19.35, s); if (k > 0) { lerpTo(k, restP, restN, restF, 0.5); thumb = 1 - k; }
         const dk = TL.doorTouch(s);
         if (dk > 0) {                                     // flat on the open door's inside face as you go past it
           door.updateMatrixWorld(true);
           const L = V3(-0.42, 1.12, 0.055).applyMatrix4(door.matrixWorld), dn = V3(0, 0, 1).transformDirection(door.matrixWorld);
-          P = P.clone().lerp(L.addScaledVector(dn, 0.02), U.easeInOut(dk)); Pn = Pn.clone().lerp(dn.clone().negate(), dk).normalize(); F = F.clone().lerp(V3(0, 1, 0).addScaledVector(fwd, 0.5).normalize(), dk).normalize(); curl = U.lerp(curl, 0.15, dk);
+          lerpTo(U.easeInOut(dk), L.addScaledVector(dn, 0.02), dn.clone().negate(), V3(0, 1, 0).addScaledVector(fwd, 0.5).normalize(), 0.15);
         }
         const pk = TL.palm(s);
-        if (pk > 0) { const pp = bodyAt(0.05, -0.22, -0.36); P = P.clone().lerp(pp, U.easeInOut(pk)); Pn = Pn.clone().lerp(V3(0, 1, 0), pk).normalize(); F = F.clone().lerp(fwd.clone().addScaledVector(right, -0.25), pk).normalize(); curl = U.lerp(curl, 0.35, pk); }
+        if (pk > 0) lerpTo(U.easeInOut(pk), bodyAt(0.05, -0.24, -0.38), V3(0, 1, 0), fwd.clone().addScaledVector(right, -0.25).normalize(), 0.35);
       }
-      return { P, Pn, F, curl };
+      return { P, Pn, F, curl, thumb };
     });
     hands.forEach((hh, i) => {
       const h = heroHands[i], rightH = i === 1;
       h.visible = showPov;
-      placeHand(h, hh.P, hh.Pn, hh.F, rightH); setCurl(h, hh.curl, 0.6); h.updateMatrixWorld(true);
+      placeHand(h, hh.P, hh.Pn, hh.F, rightH); setCurl(h, hh.curl, 0.35);
+      if (hh.thumb > 0) mugCurl(h, rightH, hh.thumb);
+      const th = h.userData.thumb, tq = new THREE.Quaternion().setFromUnitVectors(V3(0, 0, -1), (rightH ? V3(0, -0.22, -1) : V3(0.25, -0.9, -0.2)).normalize());
+      th.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -0.75, 0)).slerp(tq, hh.thumb));   // on top of the handle / up the mug's side
+      h.updateMatrixWorld(true);
       const Wr = h.localToWorld(V3(0, 0.004, 0.1)), sg = rightH ? 1 : -1;
       const S = bodyAt(sg * 0.19, -0.27, 0.04), E = ik(S, Wr, 0.31, 0.3, right.clone().multiplyScalar(sg * 0.8).add(V3(0, -0.7, 0)).addScaledVector(fwd, 0.15));
       setLimb(povArms[i].up, S, E); setLimb(povArms[i].fore, E, Wr); povArms[i].el.position.copy(E);
@@ -942,47 +1029,65 @@
     }
 
     // ---------- your friend ----------
-    const out = TL.friendOut(s) || C.wide;
-    setPersonVisible(friend, !TL.friendGone(s) || C.wide); friendHands.forEach((h) => { h.visible = friend.visible; }); friendMug.visible = friend.visible;
-    if (!out) {
-      const F0 = TL.FRIEND_IN, turn = TL.friendTurn(s);
-      friend.position.set(F0[0], 0, F0[2]); friend.rotation.y = 2.8 + 1.25 * U.easeInOut(U.smooth(8.45, 9.6, s));
-      friend.userData.head.rotation.set(0.04 + 0.12 * turn, 1.2 * U.easeInOut(turn), 0);
+    // at the window with his tea; he shows you the star, turns to you, sets his mug down, and leads you out
+    setPersonVisible(friend, true); friendHands.forEach((h) => { h.visible = true; }); friendMug.visible = true;
+    const fw = C.wide ? null : TL.friendWalk(s), arrived = C.wide || s >= 35.25;
+    const aWin = TL.BY * 0.5, aStar = -TL.BETEL.az * D2R + 0.05, lk = TL.lookYou(s), bk = TL.beckon(s);
+    const angLerp = (a2, b2, k) => { let d = b2 - a2; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a2 + d * k; };
+    let fx, fy, fz, fa, stride = { drop: 0, swing: 0 }, headX = 0.04, headY = 0;
+    if (arrived) {
+      const F1 = TL.FRIEND_OUT; fx = F1[0]; fz = F1[2]; fy = groundY(fx, fz);
+      fa = C.wide ? aStar : angLerp(-0.14, aStar, U.smooth(35.0, 35.9, s)); standPose(friend);
+      const pk = TL.point(s), ld = TL.lookDown(s);
+      headX = U.lerp(0.05, 0.42 + 0.1 * pk, U.smooth(35.2, 36.2, s)) * (1 - ld) - 0.55 * ld; headY = 0.1 * (1 - ld) + 0.25 * ld;
+    } else if (fw && s >= fw.t0) {
+      const p = fw.p; fx = p[0]; fz = p[2]; fy = p[1] < -0.3 ? groundY(fx, fz) : p[1];
+      const mv = U.clamp(fw.speed / 1.0); stride = walkPose(friend, fw.d, mv); fy -= stride.drop;
+      const ha = Math.atan2(-fw.dir[0], -fw.dir[1]); fa = angLerp(aWin + 0.45 * lk, ha, U.smooth(26.95, 27.65, s));
+      headX = -0.06; headY = 0;
     } else {
-      const F1 = TL.FRIEND_OUT, pk = TL.point(s);
-      friend.position.set(F1[0], F1[1], F1[2]); friend.rotation.y = -TL.BETEL.az * D2R + 0.05;
-      friend.userData.head.rotation.set(0.42 + 0.1 * pk, 0.1, 0);
+      const F0 = TL.FRIEND_WIN; fx = F0[0]; fy = 0; fz = F0[2]; standPose(friend);
+      const turn = U.smooth(26.95, 27.65, s), ha = Math.atan2(-(3.43 - F0[0]), -(-2.58 - F0[2]));
+      fa = angLerp(aWin + 0.45 * lk + 0.35 * bk, ha, turn);
+      headX = U.lerp(0.3, 0.02, Math.max(lk, bk)) * (1 - turn); headY = 0.95 * lk + 1.25 * bk;
     }
+    friend.position.set(fx, fy, fz); friend.rotation.y = fa; friend.userData.head.rotation.set(headX, headY, 0);
     friend.updateMatrixWorld(true);
     const fq = friend.quaternion, fR = V3(1, 0, 0).applyQuaternion(fq), fF = V3(0, 0, -1).applyQuaternion(fq);
-    // left arm (index 0): his mug at his chest indoors; relaxed outdoors
+    const restAt = (i) => friend.localToWorld(V3(i ? 0.21 : -0.21, 0.9 + 0.03 * Math.abs(stride.swing), -0.02 + (i ? -0.17 : 0.17) * stride.swing));
+    // left arm (index 0): his tea at his chest, then onto the sill beside yours; then at his side
     {
-      const S = friend.localToWorld(friend.userData.shoulders[0].clone());
-      let Wr, Pn, F;
-      if (!out) { Wr = friend.localToWorld(V3(-0.06, 1.18, -0.24)); friendMug.position.copy(Wr).add(V3(0, -0.06, 0)).addScaledVector(fR, 0.06); Pn = fR.clone(); F = fF.clone(); }
-      else { Wr = friend.localToWorld(V3(-0.21, 0.9, -0.02)); friendMug.visible = false; Pn = fR.clone(); F = V3(0, -1, 0); }
-      placeHand(friendHands[0], Wr.clone().addScaledVector(F, 0.07), Pn, F, false); setCurl(friendHands[0], out ? 0.5 : 1.05); friendHands[0].updateMatrixWorld(true);
+      const S = friend.localToWorld(friend.userData.shoulders[0].clone()), mk = TL.friendMugSet(s);
+      const chestMug = friend.localToWorld(V3(0.0, 1.12, -0.24)), sillMug = V3(2.64, 0.8, -2.91);
+      let mugP = chestMug.lerp(sillMug, U.easeInOut(mk)); if (mk > 0 && mk < 1) mugP.y += 0.05 * Math.sin(Math.PI * mk);
+      if (mk >= 1) mugP = sillMug.clone();
+      friendMug.position.copy(mugP); friendMug.quaternion.copy(mk >= 1 ? new THREE.Quaternion().setFromAxisAngle(UPY, aWin + 0.9) : fq);
+      const onMug = mugP.clone().add(V3(0, 0.06, 0)).addScaledVector(fR, -0.065);
+      const back = U.smooth(27.0, 27.5, s);
+      let Wr = onMug.clone().lerp(restAt(0), back), Pn = fR.clone().lerp(fR, back), F = fF.clone().lerp(V3(0, -1, 0), back).normalize();
+      if (C.wide || s >= 27.5) { Wr = restAt(0); F = V3(0, -1, 0).addScaledVector(fF, 0.1).normalize(); }
+      placeHand(friendHands[0], Wr.clone().addScaledVector(F, 0.07), Pn, F, false); setCurl(friendHands[0], U.lerp(1.0, 0.5, back)); friendHands[0].updateMatrixWorld(true);
       const Wj = friendHands[0].localToWorld(V3(0, 0.004, 0.1));
       poseArm(friend, 0, S, ik(S, Wj, 0.31, 0.3, fR.clone().multiplyScalar(-0.8).add(V3(0, -0.6, 0))), Wj);
     }
-    // right arm (index 1): on the mantel, then down; outside, it rises and points exactly at the star
+    // right arm (index 1): points at the star through the glass; pushes the door open; outside, points at it again
     {
       const S = friend.localToWorld(friend.userData.shoulders[1].clone());
-      let Wr, Pn, F, curl = 0.4, point = 0;
-      if (!out) {
-        const off = U.smooth(8.4, 9.2, s), mantel = V3(1.32, 1.375, -2.42), rest = friend.localToWorld(V3(0.21, 0.9, -0.02));
-        Wr = mantel.clone().lerp(rest, U.easeInOut(off)); Pn = V3(0, -1, 0).lerp(fR.clone().negate(), off).normalize(); F = V3(-0.3, 0, -1).normalize().lerp(V3(0, -1, 0), off).normalize(); curl = U.lerp(0.25, 0.5, off);
-      } else {
-        const pk = U.easeInOut(TL.point(s)), rest = friend.localToWorld(V3(0.21, 0.9, -0.02)), aim = S.clone().addScaledVector(SDIR, 0.6);
-        Wr = rest.lerp(aim, pk); Pn = fR.clone().negate().lerp(V3(0, -1, 0).addScaledVector(SDIR, 0.2), pk).normalize(); F = V3(0, -1, 0).lerp(SDIR, pk).normalize(); curl = U.lerp(0.5, 1.15, pk); point = pk;
+      const pk = C.wide ? 0 : U.easeInOut(Math.max(TL.pointWin(s), TL.point(s))), dp = C.wide ? 0 : TL.friendPush(s);
+      const aim = S.clone().addScaledVector(SDIR, 0.6);
+      let Wr = restAt(1).lerp(aim, pk), Pn = fR.clone().negate().lerp(V3(0, -1, 0).addScaledVector(SDIR, 0.2), pk).normalize(), F = V3(0, -1, 0).addScaledVector(fF, 0.1).lerp(SDIR, pk).normalize(), curl = U.lerp(0.5, 1.15, pk);
+      if (dp > 0) {                                   // flat on the inside of the door, pushing it open
+        door.updateMatrixWorld(true);
+        const L = V3(-0.62, 1.1, 0.05).applyMatrix4(door.matrixWorld), dn = V3(0, 0, 1).transformDirection(door.matrixWorld);
+        const e = U.easeInOut(dp); Wr = Wr.lerp(L.addScaledVector(dn, 0.03).addScaledVector(V3(0, -1, 0), 0.07), e); Pn = Pn.lerp(dn.clone().negate(), e).normalize(); F = F.lerp(V3(0, 1, 0), e).normalize(); curl = U.lerp(curl, 0.15, e);
       }
+      const point = pk;
       placeHand(friendHands[1], Wr.clone().addScaledVector(F, point > 0.5 ? 0.0 : 0.07), Pn, F, true); setCurl(friendHands[1], curl);
       if (point > 0.5) { const f = friendHands[1].userData.fingers[3]; f.f.rotation.x = f.mid.rotation.x = f.tip.rotation.x = 0; }   // the index finger, straight
       friendHands[1].updateMatrixWorld(true);
       const Wj = friendHands[1].localToWorld(V3(0, 0.004, 0.1));
       poseArm(friend, 1, S, point > 0.5 ? S.clone().addScaledVector(SDIR, 0.3).add(V3(0, -0.02, 0)) : ik(S, Wj, 0.31, 0.3, fR.clone().multiplyScalar(0.8).add(V3(0, -0.6, 0))), Wj);
     }
-    friendMug.quaternion.copy(fq);
   }
 
   function prepare(t) { init(); update(t); }
@@ -1004,8 +1109,11 @@
     return x1 > x0 && y1 > y0 ? [x0, y0, x1 - x0, y1 - y0] : [0, 0, 0, 0];
   }
   function draw() {
-    renderer.autoClear = true; renderer.render(scene, camera);
     const r = skyRect();
+    const hideTrees = skyInside && r && !(r[2] > 0 && r[3] > 0);     // indoors with no window or doorway in view: no forest to see
+    if (hideTrees) treeMeshes.forEach((m) => { m.visible = false; });
+    renderer.autoClear = true; renderer.render(scene, camera);
+    if (hideTrees) treeMeshes.forEach((m) => { m.visible = true; });
     renderer.autoClear = false;
     if (r) { renderer.setScissorTest(true); renderer.setScissor(r[0], r[1], r[2], r[3]); }
     if (!r || (r[2] > 0 && r[3] > 0)) renderer.render(skyScene, camera);
@@ -1016,5 +1124,7 @@
   function render(t) { prepare(t); return draw(); }
   const v3 = new THREE.Vector3();
   function project(x, y, z) { init(); v3.set(x, y, z).project(camera); return { x: (v3.x * 0.5 + 0.5) * W, y: (-v3.y * 0.5 + 0.5) * HT, d: camera.position.distanceTo(new THREE.Vector3(x, y, z)), vis: v3.z < 1 && v3.z > -1 }; }
-  g.World = { init, prepare, draw, render, project };
+  // where the star is on screen (null when it is behind you or off the frame)
+  function starScreen() { v3.copy(camera.position).addScaledVector(SDIR, 500).project(camera); return v3.z < 1 && Math.abs(v3.x) < 1.3 && Math.abs(v3.y) < 1.3 ? { x: (v3.x * 0.5 + 0.5) * W, y: (-v3.y * 0.5 + 0.5) * HT } : null; }
+  g.World = { init, prepare, draw, render, project, starScreen };
 })(window);

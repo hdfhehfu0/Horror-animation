@@ -76,6 +76,17 @@
     c.fillStyle = inside ? 'rgba(46,22,6,0.07)' : 'rgba(14,22,46,0.08)'; c.fillRect(0, 0, W, HT);
     const vg = c.createRadialGradient(540, 960, 560, 540, 960, 1260); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, inside ? 'rgba(8,3,0,0.45)' : 'rgba(0,0,0,0.36)');
     c.fillStyle = vg; c.fillRect(0, 0, W, HT);
+    // the flash: a cold bloom round the star as its light arrives, and the whole night lifted for a moment
+    const bu = C.wide ? 0 : TL.burst(s);
+    if (bu > 0.003) {
+      const sp = World.starScreen();
+      if (sp) {                                     // a soft bloom (gaussian-like falloff: no edge)
+        const r = 300 + 560 * (1 - bu), gr = c.createRadialGradient(sp.x, sp.y, 1, sp.x, sp.y, r);
+        [[0, 1], [0.08, 0.62], [0.2, 0.3], [0.36, 0.12], [0.55, 0.04], [0.78, 0.01], [1, 0]].forEach(([o, k]) => gr.addColorStop(o, `rgba(205,222,255,${0.42 * bu * k})`));
+        c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = gr; c.fillRect(sp.x - r, sp.y - r, 2 * r, 2 * r); c.restore();
+      }
+      c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(120,140,190,${0.1 * bu})`; c.fillRect(0, 0, W, HT); c.restore();
+    }
     const f = Math.floor(t * TL.FPS);
     for (let i = 0; i < 520; i++) { c.fillStyle = U.hash(i + f * 1.7) > 0.5 ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.045)'; c.fillRect(U.hash(f * 13 + i) * W, U.hash(f * 7 + i * 3) * HT, 2, 2); }
     // the hook's hard cut back to the start: a brief dip
