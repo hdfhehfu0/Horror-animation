@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Darker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="player">
+    <header class="top">
+      <h1>Darker</h1>
+      <p class="sub">What if it never stopped getting darker? · 1:20 · 1080×1920 (9:16) · 30 fps · a 3D street rendered frame by frame · <a href="index.html" style="color:#f7b500">One Minute</a> · <a href="motel.html" style="color:#f7b500">Room 9</a> · <a href="bookmarked.html" style="color:#f7b500">Bookmarked</a></p>
+    </header>
+
+    <div class="stage" id="stage">
+      <canvas id="film" width="1080" height="1920"></canvas>
+      <button class="bigplay" id="bigplay" aria-label="Play">
+        <svg viewBox="0 0 24 24" width="44" height="44"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+        <span>Play with sound</span>
+      </button>
+      <div class="status" id="status">Preparing the soundtrack…</div>
+    </div>
+
+    <div class="controls">
+      <button id="play" class="btn icon" aria-label="Play/Pause">▶</button>
+      <span class="time" id="time">0:00.0 / 1:20.0</span>
+      <input id="scrub" type="range" min="0" max="80" step="0.0333" value="0" aria-label="Seek">
+      <button id="fs" class="btn" title="Fullscreen">⛶</button>
+    </div>
+
+    <nav class="chapters" id="chapters"></nav>
+
+    <section class="export">
+      <h2>Export</h2>
+      <div class="row">
+        <button class="btn primary" id="rec">● Record video with sound</button>
+        <button class="btn" id="wav">Download soundtrack (.wav)</button>
+        <button class="btn" id="srt">Download subtitles (.srt)</button>
+        <button class="btn" id="png">Save current frame (.png)</button>
+      </div>
+      <p class="hint" id="rechint">
+        The street is real-time 3D, so live playback depends on your graphics card. For the frame-perfect MP4, run
+        <code>node render.js --page darker.html</code> (see README).
+      </p>
+      <div class="progress" id="progress" hidden><div id="bar"></div></div>
+    </section>
+  </main>
+
+  <script src="js/core.js"></script>
+  <script src="films/darker/words.js"></script>
+  <script src="films/darker/core.js"></script>
+  <script src="films/darker/voice-data.js"></script>
+  <script src="films/darker/audio.js"></script>
+  <script src="vendor/three.r170.js"></script>
+  <script src="films/darker/world.js"></script>
+  <script src="films/darker/film.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

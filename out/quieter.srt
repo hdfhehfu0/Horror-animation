@@ -1,0 +1,103 @@
+1
+00:00:00,280 --> 00:00:03,240
+What if it never stopped getting quieter?
+
+2
+00:00:03,240 --> 00:00:05,000
+It's getting quieter.
+
+3
+00:00:05,000 --> 00:00:08,440
+A normal conversation is about 60 decibels.
+
+4
+00:00:08,440 --> 00:00:10,520
+The traffic fades away.
+
+5
+00:00:10,520 --> 00:00:13,800
+A quiet library: about 40 decibels.
+
+6
+00:00:13,800 --> 00:00:15,960
+The birds stop singing.
+
+7
+00:00:15,960 --> 00:00:18,760
+A whisper is about 30 decibels.
+
+8
+00:00:18,760 --> 00:00:20,920
+Even the wind goes still.
+
+9
+00:00:20,920 --> 00:00:23,960
+Rustling leaves: about 20 decibels.
+
+10
+00:00:23,960 --> 00:00:26,440
+Now you can hear yourself breathe.
+
+11
+00:00:26,440 --> 00:00:29,080
+Normal breathing is about 10 decibels.
+
+12
+00:00:29,080 --> 00:00:31,080
+Then, nothing at all.
+
+13
+00:00:31,080 --> 00:00:35,560
+0 decibels is the quietest sound a healthy human ear can detect.
+
+14
+00:00:35,560 --> 00:00:37,400
+But you still hear something.
+
+15
+00:00:37,400 --> 00:00:44,120
+In one famous study, 94% of people in a soundproof room started hearing ringing that wasn't there.
+
+16
+00:00:44,120 --> 00:00:46,360
+Your heartbeat. Your blood.
+
+17
+00:00:46,360 --> 00:00:53,720
+The quietest room ever measured: about −20 decibels. People inside can hear their own hearts beating.
+
+18
+00:00:53,720 --> 00:00:55,720
+Then even that is gone.
+
+19
+00:00:55,720 --> 00:01:02,040
+At about −23 decibels, the only sound left would be air molecules hitting your eardrums.
+
+20
+00:01:02,040 --> 00:01:03,640
+Total silence.
+
+21
+00:01:03,640 --> 00:01:05,720
+So you would hear anything.
+
+22
+00:01:05,720 --> 00:01:07,780
+Even something breathing…
+
+23
+00:01:07,800 --> 00:01:09,410
+right behind you.
+
+24
+00:01:11,232 --> 00:01:13,252
+Wait.
+
+25
+00:01:13,752 --> 00:01:16,852
+What if it never stopped getting closer?
+
+26
+00:01:17,452 --> 00:01:21,250
+What if it never stopped getting quieter?

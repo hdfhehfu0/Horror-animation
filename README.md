@@ -119,3 +119,333 @@ python3 tools/align_narration.py films/motel/audio/raw/narr_a.mp3 films/motel/au
 python3 films/motel/mix.py
 node render.js --page motel.html
 ```
+
+---
+
+# Bookmarked (third film)
+
+A 71-second vertical "what if" short, recreating the **format** of a reference short shot by shot: a colour-coded VS card, a clue object,
+a corkboard and a map, the meeting, a red-eyed shadow, a lean-in whisper, the TEAM UP turn, a trap with a CASE CLOSED stamp, a clueless
+police department, a calendar epilogue and a comment-bait poll. Captions show **one word at a time**, timed to the narrator's words.
+The frame-by-frame breakdown of the reference is in [`films/bookmarked/REFERENCE-ANALYSIS.md`](films/bookmarked/REFERENCE-ANALYSIS.md).
+
+Open **`bookmarked.html`**, or render it with `node render.js --page bookmarked.html` (writes `out/bookmarked.mp4` and `out/bookmarked.srt`).
+
+**Story:** *What if a man who hunts killers met a man who watches everyone?* A killer in the harbour town of Port Halden leaves a bookmark at
+every scene. Crime-lab analyst **Silas Crane** follows them to a little bookstore, Wren & Page, where **Ezra Wren** closes his book and smiles:
+"I know what you do at night, Silas." Ezra has a box of receipts: the killer buys a book every Friday. Silas reads the blood, Ezra reads the people,
+and one book on one shelf is the trap. They still meet every Friday.
+
+**Cast:** both leads are original characters, written to have the energy of the requested pairing (a vigilante forensic analyst and an obsessive
+bookseller). They are not the TV characters. Silas has black side-parted hair, heavy-lidded deadpan eyes and a slate crime-lab jacket with a clipped ID badge,
+and his side of the split is crimson. Ezra has fluffy chestnut curls, round glasses and a mustard cardigan, and his side is green. There is also a grey-moustached detective.
+
+**Narrator:** ElevenLabs "Mark Vale – Deep Storyteller" (deep, cinematic American true-crime voice), model `eleven_v4`, with a `[whispering]`
+tag on Ezra's "Relax. I just watch people." The take was read slowly (88 s), so `prep_narration.py` shortens the pauses and plays it 1.12× faster (same pitch).
+It then maps the per-word times from the ElevenLabs transcript through that edit. Every cut, pop and caption is placed on those word times.
+
+**Sound:** a quiet D-minor pizzicato + pad + music-box bed (ducked under the voice, like the reference's soft bed) and small synthesised
+effects on the cues: VS pop, pin drops, shop bell, book thump, the shadow's riser and sting, sign flip, case latch, receipts, TEAM UP chime,
+blood splats, the grab, the CASE CLOSED slam, calendar flips and the end-card chime.
+
+```
+bookmarked.html                    the player page
+films/bookmarked/REFERENCE-ANALYSIS.md   frame-by-frame breakdown of the reference video
+films/bookmarked/prep_narration.py tightens the take, maps word times -> words.js, voice.mp3, voice-data.js
+films/bookmarked/words.js          generated: every word and sentence on the film timeline
+films/bookmarked/core.js           timeline: shots and cues looked up by word, one-word captions, lip flaps
+films/bookmarked/characters.js     Silas, Ezra, the detective + props (bookmark, shelves, receipts, case, pins, calendar, stamp…)
+films/bookmarked/scenes.js         the 21 shots, captions, end fade
+films/bookmarked/audio.js          synthesised score + sound effects
+films/bookmarked/audio/raw/        the ElevenLabs take and its word-timed transcript
+```
+
+Rebuild after changing the take or the tempo:
+
+```bash
+python3 films/bookmarked/prep_narration.py 1.12   # tempo
+node render.js --page bookmarked.html
+```
+
+---
+
+# Darker (fourth film)
+
+*What if it never stopped getting darker?* An 80-second vertical escalation short in the style of the
+"never stopped getting hotter" reference (breakdown: [`references/never-stopped-hotter-ANALYSIS.md`](references/never-stopped-hotter-ANALYSIS.md)):
+one locked-off camera on a low-poly street, a counter in the top-left corner, and an event line followed by a **FACT** at every stage, with a deep horror narrator added.
+
+Open **`darker.html`**, or render it with `node render.js --page darker.html` (writes `out/darker.mp4` and `out/darker.srt`).
+
+**The story.** A sunny afternoon on a dead-end street at the edge of a pine forest. The **LIGHT** counter falls from 100,000 lux to 0:
+- overcast (1,000 lux), then the streetlights flicker on, then dusk ends (3.4 lux);
+- the colours drain away (rod vision), then only the moon is left (0.25 lux), then the streetlights go out one by one;
+- *something moves between the trees*, and eyes start to shine in the dark;
+- the moon goes, then starlight (0.002 lux), then the stars go, then a cloudy night with no moon (0.0001 lux);
+- you can't see your own hand, the brain invents shapes (phosphenes), *but some of them are real*;
+- a cat can see in light about six times dimmer than you can. *And it can see you.* Cut to black. "Wait." Then a PART 2 teaser.
+
+**How it's made.**
+- **The street is real 3D** (three.js r170, vendored in `vendor/three.r170.js`, MIT), rendered headless frame by frame:
+  - flat-shaded faceted trees (jittered icosahedron crowns on forked trunks), about 600 instanced pines;
+  - clapboard houses whose windows light up and go dark, four streetlamps with spotlight pools, a parked station wagon, a striped dead-end barricade and a DEAD END sign;
+  - a sky shader, stars, the moon, and clouds that cover it;
+  - a long, low, four-legged silhouette that slinks across the road.
+- **The picture is graded in 2D on top.** The colour drains with `saturate()`, the exposure falls, lamp and moon glows are added, and the eyeshine is drawn at the projected 3D positions. The phosphenes, sensor grain, the slit-pupil close-up, the HUD (Inter + JetBrains Mono) and the reference-style captions come last: a soft dark halo behind the text, an orange FACT pill, and numbers in the mono font.
+- **The counter** is keyed in log space: it crawls while each fact is on screen, so the number agrees with what you read, and falls fast during the event lines.
+- **The narrator** is ElevenLabs "Jack – Deep Dark Horror Narrator" (`eleven_v4`), with the last two lines whispered, at its natural pace.
+  Every caption, light, window and pair of eyes is timed from the word timings of the ElevenLabs transcript.
+- **The sound.** A synthesised bed: afternoon birds and wind, the lamps' mains hum, a drone that grows as the colour drains, a pulse for each pair of eyes, a heartbeat in the dark, glassy phosphene shimmer, a sting, and a ringing after the cut. Recorded ElevenLabs effects are mixed on top: crickets that stop dead when something moves, the streetlights dying one by one, and a heavy breath at the close-up.
+
+```
+darker.html                       the player page
+films/darker/prep_narration.py    places the take on the timeline (moves the whispered "Wait." after the cut)
+films/darker/words.js             generated: word and sentence timings
+films/darker/core.js              timeline: captions, the lux counter, light/sky/exposure tracks, lamps, windows, eyes
+films/darker/world.js             the 3D street
+films/darker/film.js              compositor: grade, glows, eyes, phosphenes, HUD, captions, end cards
+films/darker/audio.js             synthesised soundtrack
+films/darker/mix.py               narration + recorded effects -> audio/voice_sfx.*, voice-data.js
+films/darker/audio/raw/, sfx/     the ElevenLabs takes, transcript and effects
+```
+
+Rebuild the audio: `python3 films/darker/prep_narration.py && python3 films/darker/mix.py`, then `node render.js --page darker.html`.
+
+---
+
+# Quieter (fifth film, Part 2 of the series)
+
+*What if it never stopped getting quieter?* The sequel teased at the end of Darker. It's the same street, the same narrator and the same reference format,
+but here **sound** is the story. Open **`quieter.html`**, or render it with `node render.js --page quieter.html` (writes `out/quieter.mp4` and `out/quieter.srt`).
+
+**The story.**
+- A golden-hour afternoon full of sound. The **SOUND** counter falls from 74 dB as each sound stops on its line:
+  - the traffic fades (cars stop crossing behind the dead end);
+  - the birds stop singing (the crows on the wire fly off);
+  - the wind goes still (trees, a flag and the falling leaves **freeze in mid-air**);
+  - you hear your own breath (the view rises and falls), then hold it.
+- At 0 dB you still hear something: the phantom ringing that 94% of people heard in a soundproof room in Heller & Bergman's 1953 study.
+- Then your heartbeat and your blood (the frame thumps). The quietest room ever measured is about −20 dB (Microsoft, Guinness 2015).
+- At about −23 dB the only sound left is air molecules (the dust motes glitter), then **−∞ dB**: total silence, digital zero.
+- Then the counter jumps back to 10 dB, because *something else is breathing*. Its long shadow creeps up the road from behind the camera: *right behind you.*
+- Cut to black. "Wait." Then a PART 3 teaser: *What if it never stopped getting closer?*
+
+**How it's made.**
+- `films/quieter/world.js` is Part 1's three.js street re-lit at golden hour, with the sun low **behind the camera**. It adds a cross street with traffic, a phone wire with crows, a waving flag and instanced leaves (all frozen by one "wind time" clock), and the creature from Part 1, kept behind the camera so that only its shadow enters the frame.
+- `film.js` adds a SOUND HUD: dB, sound pressure in µPa, and a live trace that flattens into a line. It also draws dust motes that freeze in the silence and blow away from the breath, the heartbeat pulse, the ringing shimmer, and the same caption style.
+- The sound is mostly recorded ElevenLabs effects (afternoon street, car passes, birdsong, wind, your breath, and the creature's breath from Part 1). Each one stops on the frame its source stops. The synthesised layer is your body (heartbeat, blood, the 7.8 kHz phantom ring, the molecule hiss). Between "Total silence" and the breath, nothing plays but the narrator.
+
+Rebuild the audio: `python3 films/quieter/prep_narration.py && python3 films/quieter/mix.py`, then `node render.js --page quieter.html`.
+
+---
+
+# POV: You wake up as a Kid in December of 1999 (sixth film)
+
+A recreation of a photoreal "POV nostalgia" short: six first-person shots, each with a hard cut, of a kid's December day in 1999. The shots are breakfast cereal at the kitchen table, pushing through the doors of a giant toy store, the minivan ride home with bags of presents, holding up a VHS box in a video rental store, pizza with mom and dad, and popcorn in front of the Christmas tree. A red slab-serif title sits over the first three seconds, and the film ends on a slow sink to black.
+
+The shots are **real AI video clips** generated with the user's vidIQ connector (MiniMax H3, 768p, 9:16, 4.5 s each; 140 credits including one retake). They are kept in `films/pov1999/clips/`.
+Every prompt is original and unbranded: no real store logos, cereal mascots or film footage. Where the model drifted towards something recognisable, the shot was fixed:
+- the toy-store ceiling banner is softened in every frame through a feathered mask (`"blur"` in `plan.json`), so it reads as out-of-focus signage;
+- the video-store shot was re-generated with faceless, snowy VHS covers.
+
+Output: `out/pov-1999.mp4` (1080×1920, 24 fps, 29.6 s, about −16.5 LUFS). The clips' own audio is replaced by the original music cue.
+To match the reference's lingering pacing, each clip is gently slowed with motion interpolation (`speed` in `plan.json`). The opening breakfast shot is held longest (0.78×, 5.6 s) and the rest run at 0.92×. Each clip is cut to a whole number of frames, so the fade and the music end on the last frame.
+
+```
+films/pov1999/plan.json     the six shot prompts, model and lengths
+films/pov1999/title.html    the title (Roboto Slab 800, red with a white outline) -> title.png
+films/pov1999/music.py      an original warm piano + music-box + sleigh-bell cue (no existing song) -> music.wav
+films/pov1999/assemble.py   scales and cuts the clips, title, warm grade, fade, music -> out/pov-1999.mp4
+```
+
+Re-assemble: `python3 films/pov1999/assemble.py films/pov1999/clips/{1_breakfast,2_toystore,3_minivan,4_videostore,5_pizza,6_movienight}.mp4`.
+
+---
+
+# What if another galaxy hit us? (seventh film)
+
+Same format as Darker and Quieter: the same deep narrator, caption and FACT style and end cards, on a three.js street under an animated sky. Open **`galaxy.html`**, or render it with `node render.js --page galaxy.html` (writes `out/galaxy.mp4` and `out/galaxy.srt`).
+
+**The story.**
+- Tonight: Andromeda is a faint smudge above a quiet street. The **DISTANCE TO ANDROMEDA** counter starts at 2,500,000 ly, and a second line reads NOW.
+- The years run forward in billions. The street empties; the trees wither and fall; dunes swallow the road, the car and the lamps; the houses crumble. Meanwhile Andromeda swells across the sky.
+- The Large Magellanic Cloud crashes in first. Then the Milky Way tears into tidal tails, newborn stars light the sky, and the two galactic "hearts" spiral together. A flash, and the merged galaxy, **Milkomeda**, glows over the ruins.
+- *Or maybe not.* The tape rewinds (◀◀) back to tonight: 2025 simulations put the crash at only about a coin flip within 10 billion years.
+- Back on the street, something is standing in the road, looking up. *Something else already is.* Cut to black. "Wait." Then a PART 2 teaser.
+
+**How it's made.**
+- `core.js` runs a *story time* `TL.st(t)`. It moves forward with the narration, rewinds on "Or maybe not." and then holds on tonight. Every stage (street ageing, collision, merge) and the counter are functions of it, so the rewind plays everything backwards for free.
+- `world.js` is Darker's street with a transparent background, dunes that rise through the road, a dust coat over every material, and crumbling houses, falling trees and lamps, and a sinking car. The creature returns at the end.
+- `film.js` paints the sky behind the 3D scene, including a procedural Andromeda (log-spiral arms, core and dust lanes) that grows with the distance. It also adds the VHS rewind, the HUD and the captions.
+- Sound:
+  - recorded ElevenLabs effects: crickets (two shuffled layers, so the short takes never audibly loop), desert wind, a cosmic rumble, the LMC and merge blasts, a tape rewind and the creature's breath;
+  - a synthesised cosmic drone, a starburst shimmer, two pulses for the galactic cores that fuse at the merge, and a Milkomeda chord;
+  - everything in the future is cut dead on the rewind frame, and the effects are ducked about 5 dB under the narrator.
+
+Rebuild the audio: `python3 films/galaxy/prep_narration.py && python3 films/galaxy/mix.py`, then `node render.js --page galaxy.html`.
+
+---
+
+# What if a black hole passed through? (eighth film, Part 2 of the galaxy series)
+
+The sequel teased at the end of *What if another galaxy hit us?*, made in the same format: the same narrator, caption and FACT style, and end cards. Open **`blackhole.html`**, or render it with `node render.js --page blackhole.html` (writes `out/black-hole.mp4` and `out/black-hole.srt`).
+
+**The story.**
+- A moonlit night on the street, crickets, 15°C. In 2022 Hubble found the first black hole drifting alone, about 5,000 light-years away, and there could be 100 million more.
+- One heads our way, and you can't see it. Only the stars bend: a patch of sky smears into arcs and an Einstein ring around nothing. A targeting box tracks it, and the status line counts it down from light-years to AU.
+- Its gravity tears the Moon away. The Moon stretches and splits into lensed images. Then it throws Earth out of orbit: the whole sky swings in star trails and the frame shakes.
+- A dawn starts and fails. The Sun is just a bright star. The **AVERAGE TEMPERATURE** counter falls past −18°C in a week and −73°C in a year. The lights flicker and die, and frost creeps over everything.
+- The air freezes and falls as snow (nitrogen freezes at −210°C), and drifts bury the road. Earth is a rogue planet. With no air left, the stars stop twinkling and the Milky Way blazes, and the soundtrack goes completely silent.
+- In that silence something walks down the frozen road and stops under the Sun-star. Its eyes catch the light: *Nothing human.* Cut to black. "Wait." Then a PART 3 teaser.
+
+**How it's made.**
+- `film.js` draws the sky on an offscreen layer: a starfield stored in polar coordinates around a point far below the frame, so it can swing, plus two Milky Way bands and the Moon. Each frame, the region around the black hole is remapped pixel by pixel through the point-lens equation β = θ − θE²/θ, with magnification brightening the Einstein ring. That makes the lensing real image distortion, not a sprite.
+- `world.js` is the series' street. Frost lerps every cached material toward ice, snowdrifts rise through the road, the lamps flicker out one by one, the camera shakes on the throw, and the creature (with eyeshine) walks in at the end.
+- Sound:
+  - recorded ElevenLabs effects: crickets, the approach rumble, blasts for the Moon and the throw, a freezing wind that dies as the air freezes, relays clicking off, and ice groaning;
+  - a synthesised drone, two low tones beating faster as the lens grows, a swell into the Moon, a sub drop, the mains hum winding down, a glassy freeze shimmer, and one sub pulse on "Nothing human.";
+  - from "No air." on, nothing plays but the narrator.
+
+Rebuild the audio: `python3 films/blackhole/prep_narration.py && python3 films/blackhole/mix.py`, then `node render.js --page blackhole.html`.
+
+---
+
+# What if Earth stopped spinning? (ninth film, Part 3 of the galaxy series)
+
+The sequel teased at the end of *What if a black hole passed through?*, with the same narrator, caption and FACT style, and end cards. Open **`spin.html`**, or render it with `node render.js --page spin.html` (writes `out/stopped-spinning.mp4` and `out/stopped-spinning.srt`).
+
+**The story.**
+- A sunny afternoon on the street. The **EARTH'S SPIN AT THE EQUATOR** counter reads 1,670 km/h, and the line under it reads 1 DAY = 24 HOURS.
+- *Now imagine it slowing down.* A ▶▶ TIME-LAPSE runs: the Sun races across the sky, shadows sweep the street, and lamps and windows come on each dusk. The days visibly get longer, the counter winds down and the day length climbs. The fact cards say days lengthen by about 1.8 ms per century, and that a day lasted about 18 hours 1.4 billion years ago.
+- *Then it stops.* The Sun freezes at noon, the counter reads 0 km/h, and 1 DAY = 1 YEAR.
+- The six-month day: SUNSET IN 182 DAYS counts down while the street bakes. The grass browns, everything bleaches, and heat haze shimmers. The fact card: without the spin, the oceans would drain toward the poles (Esri's Fraczek model).
+- A long sunset into a six-month night. Frost creeps in, and two streetlamps can't hold a steady light. Something walks down the road under the lamps, and its eyes catch the light: *And something has been waiting for it.* Cut to black. "Wait." Then a PART 4 teaser.
+
+**How it's made.**
+- `core.js` drives everything from a day clock `TL.phi(t)`. During the time-lapse, its rate is a decaying curve, integrated and scaled so the Sun stops exactly at noon on the word "stops". It then holds for the long day and sets into the night. The Sun's position, the daylight, twilight, lamps, windows and the counter all read from it.
+- `world.js` is the series' street with the key light following the Sun across the sky, so the shadows sweep. It adds the bleach of the long day, the rime of the long night, and the creature.
+- `film.js` paints the sky (day blue, orange dusk, stars), the Sun's disc and glare (streaking in the time-lapse), the heat haze, the badge and HUD, and the captions.
+- Sound:
+  - a spin hum whose pitch follows the counter, winding down like a record slowing to a stop, with a clock tick every quarter-day and a whoosh at each sunrise and sunset;
+  - a thud when the spin stops, cicadas and hot wind for the long day, a falling chord for the sunset, and a cold drone for the night;
+  - crickets that stop dead when the creature walks out of the dark, then its breath.
+
+Rebuild the audio: `python3 films/spin/prep_narration.py && python3 films/spin/mix.py`, then `node render.js --page spin.html`.
+
+---
+
+# What if the Moon crashed into Earth? (tenth film, first person)
+
+Part 4 of the galaxy series, made in the style of a second reference: a continuous, handheld **first-person** shot in a city. Its structure is analysed in `references/moon/ANALYSIS.md`; the reference video itself is not committed. Open **`moon.html`**, or render it with `node render.js --page moon.html` (writes `out/moon-pov.mp4` and `out/moon-pov.srt`).
+
+**The style (taken from the reference).**
+- **Countdown:** a small letter-spaced **THE MOON** label, a big gold serif **5 4 3 2 1**, and *IMAGINED SCENARIO*.
+- **Two voices:**
+  - a calm, deep documentary narrator, captioned in *white italic serif*;
+  - your own frightened prayers, captioned in **gold upright serif** ("What the...", "Oh God.", "Oh God, make this easy for me.", "Oh God!", and the shahada at the end).
+- **POV:** your gloved right hand out in front, later both hands on the railing, and your legs below you when you're lifted. The camera breathes, sways, walks, runs, whips round with motion blur, and is pulled up into the sky. The light runs day → dusk → night.
+
+**The story.**
+- In five seconds the Moon stops orbiting and starts to fall. It grows over the avenue. The gutter water runs toward it and a puddle stretches after it.
+- You run for the subway, and the water climbs up the stairs toward you. Back on the street at night, a taxi lifts off the road.
+- The Moon cracks with glowing fissures and breaks apart, and burning pieces streak down the avenue. You hold the curb railing while the buildings across the street tear off their foundations.
+- The railing bends, its bolts pull out, and you're lifted over the city. As you rise toward the broken Moon you say the shahada. A white flash, then nothing.
+
+**How it's made.**
+- `films/moon/prep_voices.py` splits the two voice takes (ElevenLabs: "Jason Abadi" narrator, "Lip" inner voice) at their pauses. It places each line on the timeline at the moment of its scene, following the reference's pacing, and writes `lines.js`.
+- `core.js` holds:
+  - the first-person camera path (keyframes with handheld breathing, walk bob and shake);
+  - the Moon's size, elevation, cracking and splitting;
+  - the 22 falling pieces with their impact points and times;
+  - every stage (water, litter, taxi, buildings, railing, lift).
+- `world.js` builds the city in three.js:
+  - about 350 buildings merged into a few meshes, with windows drawn by a shader (glass reflects the sky by day, some lit warm at night);
+  - the subway entrance with lit stairs, iron railings, trees, lamps and a taxi;
+  - water shaders and instanced debris;
+  - the hands, arms and legs.
+- `film.js` draws:
+  - the sky behind the city and the Moon where it really sits in your view: a procedural cratered face that cracks along Voronoi fissures and comes apart in drifting pieces;
+  - the meteors (streaks behind the buildings) and their impact flashes and dust;
+  - whip-pan motion blur, grade and grain;
+  - the countdown and the two caption styles.
+- Sound:
+  - recorded ElevenLabs effects: the city afternoon, gutter and stairwell water, car alarms, a rising wind and rumble, impact booms (each delayed by its distance at 340 m/s), the railing giving, and panicked breathing;
+  - a synthesised tense drone, sub hits, the crack groan and a rising rush.
+
+  The effects are ducked about 8 dB under the voices.
+
+Rebuild the audio: `python3 films/moon/prep_voices.py && python3 films/moon/mix.py`, then `node render.js --page moon.html`.
+
+# What if a rogue planet passed as close as the Moon? (eleventh film, first person)
+
+Made to the owner's `/mad-space` standard (`.claude/skills/mad-space/`) in the same first-person format as the Moon film, at native 60 fps. Open **`planet.html`**, or render it with `node render.js --page planet.html` (writes `out/rogue-planet.mp4` and `out/rogue-planet.srt`).
+
+**The story.**
+- A 2.6 s hook: the payoff sky, a flash-forward. Then dusk on a harbour-city rooftop: you lean on the parapet in gloves, your friend beside you. The countdown (**A ROGUE PLANET ARRIVES IN**, gold 5 4 3 2 1 0, one second per number) lands on zero as the planet's top and rings clear the sea.
+- A Saturn-sized world with no sun rises at the Moon's distance: more than 30 times wider than the Moon, its rings spanning about 75 full Moons. The real Moon hangs beside it for scale. Your friend points exactly at the rings' left ansa, and the camera follows his finger.
+- The pull: the building shakes and your hands grip the coping. You lean over the edge and watch the harbour drain to mud, the boats lying on their sides.
+- The payoff sky: the Milky Way's gold cloud, forked dust lane, rose wisps and red nebulae over the ringed giant, and a shooting star in the silence. Sirens; the city's power fails; the sea itself rises into a mountain of water at the horizon.
+- Wide ending: the two men small on the roof as the wall of water climbs toward the planet.
+
+**How it's made.**
+- `prep_voices.py` places two male voices: ElevenLabs premade "Brian" for the friend (white italic serif captions) and the hero's take (#FFD54A captions). The take's "Subhan Allah" was removed at the owner's request, voice and caption.
+- `core.js`: one scene clock, the hook mapping, camera keys (turns under 110°/s, push-ins on holds, the lean over the edge), the planet's rise, the sky gating, the drain, the surge, the shake and the pointing.
+- `world.js`, following `references/space_look_spec.md`:
+  - the stars drawn per screen pixel, so each is a crisp gaussian core at any lens: five populations with random^9 brightness, colour only in the brightest, a faint bloom and gentle scintillation (more near the horizon) on the brightest, a patchy density mask, and hero stars. Layers too fine for a wide lens fade into the unresolved glow. The Milky Way's light is baked once into a cube texture: gold cloud, forked ragged dust lane, rose wisps, red emission nebulae and a lavender-to-blue far end. Three meteors cross during the long holds. All of it sits over a midnight-blue dome with dusk and warm city light pollution.
+  - the giant: banded globe with violet storm belt and oval, C/B/A rings with Cassini and Encke gaps, one sun direction, the ring shadow on the globe and the globe's shadow on the rings.
+  - the sea (glitter path, drawdown, surge wall), the sloped harbour floor, boats, piers, quay, lamps and the city;
+  - the rooftop (precast coping, gravel deck, tank), your IK arms and gloved hands, and both men in quilted coats, beanies, balaclavas and mirrored goggles (no eyes anywhere).
+- `film.js`: lamp glows (occluded by your own roof), shake smear, grade, grain, the V11 countdown and the captions at y ≈ 1401.
+- Sound (`mix.py`): **no music**. Recorded physical effects only: the rooftop, a rumble, the building groaning, the harbour draining, sirens, the surge roar, transformers failing, and breathing. Every line sits at least +12 dB over the effects (the script prints each margin). Final loudness is −16 LUFS (remux from `out/rogue-planet-score.wav` + `films/planet/audio/voice_sfx.wav`).
+
+Rebuild the audio: `python3 films/planet/prep_voices.py && python3 films/planet/mix.py`, then `node render.js --page planet.html`.
+
+# What if a solar storm like 1859 hit tonight? (twelfth film, first person)
+
+Made to the owner's `/mad-space` standard in the same first-person format as the rogue planet film, at native 60 fps. Open **`storm.html`**, or render it with `node render.js --page storm.html` (writes `out/solar-storm.mp4` and `out/solar-storm.srt`).
+
+**The story.**
+- A 2.6 s hook: the payoff sky, a flash-forward. Then a normal night on the same rooftop, looking north over a lit city. The countdown (**THE STORM HITS IN**, gold 5 4 3 2 1 0) lands on zero as a red glow rises in the north.
+- Your friend points at it: seventeen hours ago the Sun threw billions of tons of plasma at us. The aurora spreads overhead (green curtains with a pink fringe and a high red glow) and moves.
+- A transformer blows in the square below you, and you grip the parapet. Then, one after another, transformers blow across the city, and each takes its district dark: lamps and windows flicker out block by block, at the speed the failure spreads.
+- Your phone: *No Service*. With every light out, the full Milky Way appears behind the aurora as the oval sweeps over you.
+- Wide ending: the two men small on the roof above a black city, under the storm.
+
+**Facts used.** The 1859 Carrington storm's plasma took about 17.6 hours to arrive; its auroras were seen as far south as Cuba; Rocky Mountain gold miners got up and made breakfast thinking it was morning; telegraph wires sparked and set paper on fire. Long power lines carry geomagnetically induced currents that can burn out transformers. A Carrington-class eruption in July 2012 crossed Earth's orbit about nine days after Earth had passed.
+
+**How it's made.**
+- `prep_voices.py` places the friend (ElevenLabs premade "Brian", white captions; the take was checked word for word with Scribe) and the hero ("Lip", #FFD54A captions).
+- `core.js`: one scene clock, the camera keys, the aurora's strength, colour and southward sweep, the eight transformer failures, and `cutTime(x, z)`: when each part of the city goes dark.
+- `world.js`:
+  - the sky: the same crisp per-pixel stars and baked Milky Way as the rogue planet film, plus the aurora. Vertical east-west sheets with folds, a sharp green lower edge, a pink fringe, rays along the field lines, edge-on brightening, and a broad high red glow, sweeping south over you. Each transformer flash lights the low sky toward it.
+  - the city: merged blocks with shader windows, an open square below you, and street lamps drawn as depth-tested points. Each window and lamp reads its block's cut time and flickers out. The transformer arcs are drawn as points, with a light on the buildings around them.
+  - you and your friend: as in the rogue planet film, plus your phone, held in your right hand, with a live screen.
+- Sound (`mix.py`): **no music**. The city at night thins out district by district. Power lines buzz, and each transformer's bang arrives late, at the speed of sound. Then the blackout: dogs, horns, distant sirens, and your breathing. Every line sits at least +12 dB over the effects. Final loudness is −16 LUFS.
+
+Rebuild the audio: `python3 films/storm/prep_voices.py && python3 films/storm/mix.py`, then `node render.js --page storm.html`.
+
+# What if Betelgeuse exploded tonight? (thirteenth film, first person)
+
+Made to the owner's `/mad-space` standard, cozy this time: two friends by the fire in a log cabin on a winter night, at native 60 fps. Open **`nova.html`**, or render it with `node render.js --page nova.html` (writes `out/betelgeuse.mp4` and `out/betelgeuse.srt`).
+
+**The story.**
+- A 3.1 s hook: the payoff, a flash-forward. Out in the snow, your friend points at a blazing new star in Orion: *"A star just exploded. Right there."*
+- Then the cabin: the fire, a mug of tea in your hands, your friend by the mantel, the clock ticking. The countdown (**THE LIGHT ARRIVES IN**, gold 5 4 3 2 1 0) lands on zero as a cold white light pours through the window across the floor.
+- You cross to the window and look up past the eaves: Orion, and where its red shoulder star was, a blue-white point brighter than everything in the sky. Your friend goes out; you set your mug on the sill and see him already standing in the snow.
+- Through the open door and out under the sky. Its neutrinos went through you hours ago. You turn round: your two shadows, cast by one star, lie long across the snow toward the cabin's warm window.
+- He points: it will fade in months, and Orion loses its shoulder forever. Wide ending: over the snowy roof, the two of you small in the snow, long tree shadows, the new star above the valley.
+
+**Facts used.** Betelgeuse is the red supergiant on Orion's shoulder, about 550 light-years away (published estimates run about 550–700). It is so large that in the Sun's place it would reach past the orbit of Mars. A core-collapse supernova's neutrinos arrive hours before its light, and vast numbers would pass through every person. At its peak it would be about as bright as a half Moon, would cast shadows, and would stay visible in daylight for months. A supernova would have to be far closer, around 50 light-years, to harm Earth. Estimates put the explosion within roughly the next 100,000 years. The film compresses the brightening into a moment; in reality it would take hours to days.
+
+**How it's made.**
+- `prep_voices.py` places the friend (ElevenLabs premade "Brian", white captions; the take was checked word for word with Scribe) and the hero ("Lip", #FFD54A captions).
+- `core.js`: one scene clock, the camera keys and your walk (eased paths with a step bob), and Orion's real alt-azimuth for 60° N at local sidereal time 118°, turned so the window faces it.
+- `world.js`:
+  - the sky: the approved per-pixel stars and baked Milky Way (the band along the real winter galactic plane), Orion and its neighbours from their real coordinates (cores and halos by magnitude, the field thinned slightly round them), the Orion Nebula, and the supernova with its halo, glare, short spikes and lit air.
+  - the cabin: log walls, a fieldstone fireplace, mantel clock, rug, armchair, oil lamps, a window with muntins and frost, and a plank door. Outside: a snowy roof with icicles, a stone chimney, and a lantern.
+  - the fire: charred logs with glowing cracks, coals and ash, 7 flame cards plus 5 licks of flowing noise, rising embers, and a flickering key light that throws shadows across the room.
+  - the snow (sparkling only where the star lights it), the valley, the far ridge, and instanced snowy pines. The star is a directional light whose shadow box follows the shot: the window panes on the floor, the trees and the people on the snow.
+  - the people: you (fingerless knit gloves, IK forearms, a mug with steam) and your friend in a cable-knit sweater, beanie, beard and dark glasses (no eyes anywhere).
+- Sound (`mix.py`): **no music**. The fire, the mantel clock (it ticks the countdown down to zero), floorboards, the door, a mug on the sill, snow under your boots, your breath in the cold, and the fire far behind you outside. The supernova itself is silent. Every line sits at least +12 dB over the effects (lowest +19.9 dB). Final loudness is −16 LUFS.
+
+Rebuild the audio: `python3 films/nova/prep_voices.py && python3 films/nova/mix.py`, then `node render.js --page nova.html`.
