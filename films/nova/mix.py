@@ -1,9 +1,9 @@
 """Betelgeuse (POV): the two voices + recorded physical effects on the film's timeline -> films/nova/audio/voice_sfx.wav/.mp3
-and films/nova/voice-data.js. No music of any kind. Cue times follow films/nova/core.js: the fire and the mantel clock
-indoors (the clock ticks the countdown down and lands on zero), floorboards, the door your friend opens, snow under your
-boots, your breath in the cold; outside it is nearly silent, with the fire far behind you through the open door. The
-supernova itself makes no sound -- nothing would reach you. The effects duck under every line so speech sits at least
-+12 dB over them.
+and films/nova/voice-data.js. No music of any kind. Cue times follow films/nova/core.js: the fire and a quiet mantel clock
+indoors, the floorboards as you stand and cross to the window, two mugs set on the sill, your friend's steps to the door,
+its latch and hinge, snow under his boots ahead of you and under yours; outside it is nearly silent -- your breath, the
+fire far behind you through the open door. The countdown is only breath. The supernova makes no sound (nothing would reach
+you): at the flash you catch your breath. The effects duck under every line so speech sits at least +12 dB over them.
 usage: python3 films/nova/mix.py   (after prep_voices.py)
 """
 import json, subprocess, wave
@@ -63,32 +63,39 @@ snow = load(D + 'snow_1.mp3', 'highpass=f=90'); snow = peak_norm(cut(snow, 0.0, 
 breath = rms_norm(load(D + 'breath_2.mp3', 'highpass=f=150,lowpass=f=6000'), -36)
 fireFar = rms_norm(load(D + 'fire_3.mp3', 'highpass=f=60,lowpass=f=700'), -44)
 
-# ---- the hook: outside under the new star, almost silent; your breath in the cold
+# ---- the hook: outside under Orion, almost silent; your breath in the cold
 bed(breath, 0.0, HOOK, -2, fade_in=0.05, fade_out=0.08)
-# ---- indoors: the fire, close and warm; it falls away behind you as you go out
-bed(fireBed, HOOK, 30.2, 0, fade_in=0.06, fade_out=1.6, env=lambda t: -2 * ramp(t, 12.0, 14.2) - 4 * ramp(t, 26.5, 30.0))
+# ---- indoors: the fire, close and warm; a little further from it at the window; it falls away as you go out
+bed(fireBed, HOOK, 31.8, 0, fade_in=0.06, fade_out=1.6, env=lambda t: -2 * ramp(t, 5.5, 7.5) - 3 * ramp(t, 28.8, 31.5))
 t = HOOK + 0.4
-while t < 28.0:                                                            # crackles and pops, never on top of each other
-    p = pops[rng.integers(len(pops))]; place(p, t, float(rng.uniform(-4, 0)), fade_out=0.08); t += float(rng.uniform(1.2, 3.4))
-# the mantel clock: tick... tock, one a second through the countdown, landing on zero; quieter after
-for k, tt in enumerate(np.arange(HOOK, 28.0, 1.0)):
-    place(ticks[k % 2], float(tt), 0 if tt <= ZERO + 0.01 else -6, fade_out=0.02)
-# the floor: you get up and cross to the window; your friend goes to the door; you go out
-place(floor, 10.95, -4, fade_out=0.2); place(floor, 12.1, -2, fade_out=0.2)
-place(floor, 16.6, -13, fade_out=0.3); place(floor, 17.9, -14, fade_out=0.3)
-place(latch, 18.45, -9); place(creak, 19.75, -12, fade_in=0.05, fade_out=0.3)     # he opens the door, behind you
+while t < 30.0:                                                            # crackles and pops, never on top of each other
+    p = pops[rng.integers(len(pops))]; place(p, t, float(rng.uniform(-4, 0)) - (2 if t > 7.5 else 0), fade_out=0.08); t += float(rng.uniform(1.2, 3.4))
+for k, tt in enumerate(np.arange(HOOK + 0.3, 29.0, 1.0)):                  # the mantel clock, quietly
+    place(ticks[k % 2], float(tt), -9 if tt < 7.5 else -12, fade_out=0.02)
+# you stand and cross to the window
+place(floor, 4.7, -4, fade_out=0.2); place(floor, 5.8, -5, fade_out=0.2); place(floor, 6.9, -6, fade_out=0.2)
 mug = load(D + 'mug_1.mp3', 'highpass=f=80'); on = int(np.argmax(np.abs(mug) > 0.25 * np.abs(mug).max())); mug = peak_norm(mug[max(0, on - int(0.02 * SR)):on + int(0.5 * SR)], -17)
-place(mug, 23.47, 0, fade_in=0.005, fade_out=0.15)                              # your mug on the sill
-place(floor, 24.9, -3, fade_out=0.2); place(floor, 26.5, -3, fade_out=0.2)
-place(creak, 28.55, -9, fade_in=0.05, fade_out=0.3)                              # you push the door a little wider
-# ---- outside: snow under your boots, then stillness
-for k, tt in enumerate(np.arange(28.95, 31.6, 0.56)):
-    sv = pitch(snow, float(rng.uniform(0.9, 1.12))); place(sv, float(tt), float(rng.uniform(-3, 0)), fade_out=0.06)
-bed(fireFar, 29.0, DUR, 0, fade_in=1.5, fade_out=2.0, env=lambda t: -10 * ramp(t, 31.0, 36.0) - 6 * ramp(t, 55.5, 57.5))
-bed(breath, 31.0, 55.8, 0, fade_in=1.5, fade_out=1.0, env=lambda t: -3 * ramp(t, 48, 54))
-for tt in (40.4, 41.2):                                                          # you turn round in the snow
+place(mug, 18.95, 0, fade_in=0.005, fade_out=0.15)                              # your mug on the sill
+place(pitch(mug, 1.08), 26.95, -2, fade_in=0.005, fade_out=0.15)                # his, beside it
+# his steps to the door; the latch; the hinge as he pushes it open; your steps after him
+place(floor, 27.8, -9, fade_out=0.25); place(floor, 28.5, -10, fade_out=0.25)
+place(latch, 28.6, -8); place(creak, 28.85, -10, fade_in=0.05, fade_out=0.3)
+place(floor, 29.2, -5, fade_out=0.2); place(floor, 30.0, -6, fade_out=0.2)
+place(creak, 30.95, -12, fade_in=0.05, fade_out=0.3)                             # your hand pushes it a little wider
+# ---- outside: snow under his boots ahead of you, and under yours; then stillness
+for tt in np.arange(29.95, 35.1, 0.64):
+    place(pitch(snow, float(rng.uniform(0.95, 1.1))), float(tt), float(rng.uniform(-10, -8)), fade_out=0.06)
+for tt in np.arange(31.55, 36.0, 0.6):
+    place(pitch(snow, float(rng.uniform(0.9, 1.12))), float(tt), float(rng.uniform(-3, 0)), fade_out=0.06)
+bed(fireFar, 29.0, DUR, 0, fade_in=1.5, fade_out=2.0, env=lambda t: -8 * ramp(t, 32.0, 37.0) - 6 * ramp(t, 52.0, 55.0))
+bed(breath, 31.5, 53.5, 0, fade_in=1.5, fade_out=1.0, env=lambda t: -2 * ramp(t, 41.0, 44.5) - 3 * ramp(t, 48, 53))
+# the flash: you catch your breath
+w2 = int(0.7 * SR); bb = load(D + 'breath_2.mp3', 'highpass=f=150,lowpass=f=6000')
+env = np.convolve(bb ** 2, np.ones(w2) / w2, 'valid'); i0 = int(np.argmax(env)); gasp = peak_norm(bb[i0:i0 + w2], -16)
+place(gasp, ZERO + 0.12, -2, fade_in=0.02, fade_out=0.25)
+for tt in (46.95, 47.6):                                                       # you turn round in the snow
     place(pitch(snow, 1.25), tt, -8, fade_out=0.05)
-for tt in (44.0, 44.7):
+for tt in (50.25, 50.95):                                                      # and back
     place(pitch(snow, 1.2), tt, -9, fade_out=0.05)
 
 sfx = 0.3 * np.tanh(sfx / 0.3)                                                   # a gentle limiter on the effects bus
@@ -117,6 +124,6 @@ for a, b, who, text in C['lines']:
     v = v[np.abs(v) > 1e-4]
     vr, sr_ = 20 * np.log10(np.sqrt(np.mean(v ** 2)) + 1e-9), 20 * np.log10(np.sqrt(np.mean(s ** 2)) + 1e-9)
     print(f'{a:5.1f}-{b:5.1f} {who:6s} voice {vr:6.1f} dB  sfx {sr_:6.1f} dB  margin {vr - sr_:+5.1f} dB  {"OK" if vr - sr_ >= 12 else "LOW"}')
-for a, b in [(0, HOOK), (HOOK, ZERO + 0.5), (ZERO + 0.5, 28.5), (28.5, 32), (32, 56), (56, DUR)]:
+for a, b in [(0, HOOK), (HOOK, 27.5), (27.5, 31.5), (31.5, 36), (36, ZERO), (ZERO, C['wide']), (C['wide'], DUR)]:
     s = sfx[int(a * SR):int(b * SR)]; print(f'sfx {a:5.1f}-{b:5.1f}s rms {20 * np.log10(np.sqrt(np.mean(s ** 2)) + 1e-9):6.1f} dB')
 print('peak', round(float(peak), 3))
